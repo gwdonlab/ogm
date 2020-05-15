@@ -9,74 +9,12 @@ from ogm.parser import TextParser
 
 
 class TextTrainer(TextParser):
-    model_types = {"kmeans", "lda"}
+    model_types = {"lda"}
 
     def __init__(self, language="english"):
         super(TextTrainer, self).__init__(language=language)
         self.model_type = None
         self.model = None
-
-    # NOT FUNCTIONAL UNDER CURRENT INHERITANCE STRUCTURE
-    # def reduce_dimensions(self, sparse=False, output_dimensions=2):
-    #     """
-    #     Use scikit to reduce data dimensions.
-    #     If the data is in sparse format, set `sparse` to true to use the `TruncatedSVD` rather than `PCA`.
-    #     Otherwise, this will be detected and run automatically
-    #     """
-    #     if self.data is None:
-    #         raise ValueError("No data to reduce")
-
-    #     try:
-    #         if sparse:
-    #             raise TypeError
-
-    #         from sklearn.decomposition import PCA
-
-    #         self.data = PCA(n_components=output_dimensions).fit_transform(self.data)
-
-    #     except TypeError:
-    #         from sklearn.decomposition import TruncatedSVD
-
-    #         self.data = TruncatedSVD(n_components=output_dimensions).fit_transform(
-    #             self.data
-    #         )
-
-    #     gc.collect()
-
-    def train_kmeans(
-        self,
-        key,
-        n_clusters,
-        output_path,
-        initializer="k-means++",
-        supress_output=False,
-    ):
-        """
-        Use scikit to run k-means clustering. Will export the model when finished. K-means will be run on the data in the specified `key` of the internal data dictionary
-        """
-
-        if self.data == None:
-            raise ValueError("Missing data!")
-
-        elif key not in self.data[0].keys():
-            raise KeyError("Data doesn't have " + key + " as a header")
-
-        else:
-            temp_data = [entry[key] for entry in self.data]
-
-            from sklearn.cluster import MiniBatchKMeans
-
-            if supress_output:
-                v = 0
-            else:
-                v = 10
-
-            kmeans = MiniBatchKMeans(n_clusters=n_clusters, init=initializer, verbose=v)
-            kmeans.fit(temp_data)
-            dump(kmeans, output_path)
-            self.model = kmeans
-            self.model_type = "kmeans"
-            gc.collect()
 
     def load_model(self, model_type, input_path):
         """
@@ -86,9 +24,6 @@ class TextTrainer(TextParser):
 
         if model_type not in self.model_types:
             raise KeyError("Unsupported model type")
-        elif model_type == "kmeans":
-            self.model = load(input_path)
-            self.model_type = model_type
         elif model_type == "lda":
             from gensim.models import LdaModel
 
@@ -168,9 +103,7 @@ class TextTrainer(TextParser):
 
             # Ignore stopwords and short words, stem/lemmatize the rest
             if token not in STOPWORDS and len(token) > 3:
-                lemm_stem = stemmer.stem(
-                    WordNetLemmatizer().lemmatize(token, pos="v")
-                )
+                lemm_stem = stemmer.stem(WordNetLemmatizer().lemmatize(token, pos="v"))
 
                 # Append this result to list of words
                 result.append(lemm_stem)
@@ -178,4 +111,3 @@ class TextTrainer(TextParser):
         # Use list of words to predict topics
         doc_vector = self.model.id2word.doc2bow(result)
         return self.model[doc_vector]
-
