@@ -1,0 +1,17 @@
+import setuptools
+
+setuptools.setup(
+    name="Online Group Modeling",
+    version="1.0.0",
+    author="Richard Sear",
+    author_email="searri@gwu.edu",
+    description="Package for using machine learning to analyze the behavior of online groups",
+    long_description_content_type="text/markdown",
+    url="https://github.com/searri/social-clustering-research",
+    packages=setuptools.find_packages(),
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "Operating System :: OS Independent",
+    ],
+    python_requires='>=3.6',
+)
