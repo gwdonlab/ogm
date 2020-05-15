@@ -355,6 +355,14 @@ class TextParser:
         self.data = temp
         return items_removed
 
+    def __str__(self):
+        stub = "Parser Object\n\tDocuments: %d" % len(self.data)
+        if len(self.data) > 0:
+            stub += "\n\tHeaders: " + str(self.data[0].keys())
+            stub += "\n\tLanguage: " + self.lang
+            stub += "\n\tStemmed: " + str(self.stemmed)
+        return stub
+
 
 class ImageParser:
     def parse_csv(self, filepath, labeled=True):
