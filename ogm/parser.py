@@ -32,14 +32,15 @@ class TextParser:
 
         self.data = data_dicts
 
-    def parse_tsv(self, filepath):
+    def parse_tsv(self, filepath, encoding="utf8"):
         """
-        Parse the tsv file at `filepath` into an internal dict list
+        Parse the tsv file at `filepath` into an internal dict list. Optionally, specify the document's encoding.
+        Will assume UTF-8 by default
         """
         data_dicts = []
         data_temp = []
 
-        with open(filepath, "r", encoding="utf8") as tsvin:
+        with open(filepath, "r", encoding=encoding) as tsvin:
             tsvin = csv.reader(tsvin, delimiter="\t")
 
             for row in tsvin:
@@ -54,14 +55,15 @@ class TextParser:
 
         self.data = data_dicts
 
-    def parse_csv(self, filepath):
+    def parse_csv(self, filepath, encoding="utf8"):
         """
-        Parse the csv file at `filepath` into an internal dict list
+        Parse the csv file at `filepath` into an internal dict list. Optionally, specify the document's encoding.
+        Will assume UTF-8 by default
         """
         data_dicts = []
         data_temp = []
 
-        with open(filepath, "r", encoding="utf8") as csvin:
+        with open(filepath, "r", encoding=encoding) as csvin:
             csvin = csv.reader(csvin)
 
             for row in csvin:
