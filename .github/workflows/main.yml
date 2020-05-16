@@ -1,0 +1,10 @@
+name: Pylint
+on: [push]
+jobs:
+  Pylint:
+    runs-on: ubuntu-latest
+    steps:
+      - run: pip install pylint 
+      - run: pip install cython
+      - run: pip install -r requirements.txt
+      - run: pylint **/*.py
