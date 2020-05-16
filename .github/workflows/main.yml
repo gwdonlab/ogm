@@ -6,5 +6,6 @@ jobs:
     steps:
       - run: pip install pylint 
       - run: pip install cython
+      - run: ls
       - run: pip install -r ogm/requirements.txt
-      - run: pylint ogm/ogm
+      - run: pylint ogm
