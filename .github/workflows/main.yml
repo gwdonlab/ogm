@@ -4,8 +4,8 @@ jobs:
   Pylint:
     runs-on: ubuntu-latest
     steps:
-      - run: pip install pylint 
-      - run: pip install cython
-      - run: ls
-      - run: pip install -r ogm/requirements.txt
-      - run: pylint ogm
+      - run: |
+          pip install pylint 
+          pip install cython
+          pip install -r requirements.txt
+          pylint **/ogm
