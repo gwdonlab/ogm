@@ -7,4 +7,4 @@ jobs:
       - run: pip install pylint 
       - run: pip install cython
       - run: pip install -r requirements.txt
-      - run: pylint **/*.py
+      - run: pylint ogm

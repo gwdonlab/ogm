@@ -1,14 +1,17 @@
 """
 Each Trainer class type extends the corresponding Parser class type
 """
-import gc, pickle
-
-from joblib import dump, load
+# pylint: disable=bad-continuation, too-many-arguments
 
 from ogm.parser import TextParser
 
 
 class TextTrainer(TextParser):
+    """
+    Utility functions for training text-based models
+    Extends `TextParser`
+    """
+
     model_types = {"lda"}
 
     def __init__(self, language="english"):
@@ -18,13 +21,14 @@ class TextTrainer(TextParser):
 
     def load_model(self, model_type, input_path):
         """
-        Load a model from `input_path` to the `self.model` attribute. 
+        Load a model from `input_path` to the `self.model` attribute.
         Will raise a KeyError if the model type is not supported
         """
 
         if model_type not in self.model_types:
             raise KeyError("Unsupported model type")
-        elif model_type == "lda":
+
+        if model_type == "lda":
             from gensim.models import LdaModel
 
             self.model = LdaModel.load(input_path)
@@ -47,11 +51,13 @@ class TextTrainer(TextParser):
         """
         Train a gensim LDA model with the specified parameters.
         Will save this model to disk at the specified `output_path`.
-        Will generate a gensim dictionary and BoW structure on the data with header `key`, unless this has already been done
+        Will generate a gensim dictionary and BoW structure on the data
+        with header `key`, unless this has already been done
         """
         if key is None and self.dictionary is None:
             raise ValueError("Please specify a key to generate dictionary from")
-        elif dictionary is None:
+
+        if dictionary is None:
             from gensim.corpora import Dictionary
 
             temp = [entry[key] for entry in self.data]
@@ -85,11 +91,13 @@ class TextTrainer(TextParser):
 
     def predict_lda(self, input_data):
         """
-        Use an internal LDA model to make a prediction about the topic distribution in the `input_data` document, which is just a string
+        Use an internal LDA model to make a prediction about the topic distribution
+        in the `input_data` document, which is just a string
         """
         if self.model is None:
             raise ValueError("No trained model in this TextTrainer")
-        elif self.model_type != "lda":
+
+        if self.model_type != "lda":
             raise ValueError("Model type is " + self.model_type)
 
         from nltk.stem import WordNetLemmatizer, SnowballStemmer

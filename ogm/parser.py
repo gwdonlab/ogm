@@ -1,10 +1,18 @@
 """
 Parser class
 """
-import xlrd, json, pickle, csv, gc
+# pylint: disable=bad-continuation, too-many-arguments
+import pickle
+import csv
+import gc
+import xlrd
 
 
 class TextParser:
+    """
+    Read text data from a variety of sources and perform various processing tasks on it
+    """
+
     def __init__(self, language="english"):
         """
         Supported languages depend on which methods are being used.
@@ -18,15 +26,18 @@ class TextParser:
 
     def parse_excel(self, filepath, sheet):
         """
-        Parse the Sheet `sheet` (0-indexed) in the Excel file at `filepath` into an internal dict list
+        Parse the Sheet `sheet` (0-indexed) in the Excel file at
+        `filepath` into an internal dict list
         """
         data_dicts = []
 
-        sh = xlrd.open_workbook(filepath).sheet_by_index(sheet)
-        for row in range(1, sh.nrows):
+        open_sheet = xlrd.open_workbook(filepath).sheet_by_index(sheet)
+        for row in range(1, open_sheet.nrows):
             data_row = {}
-            for heading in sh.row_values(0):
-                data_row[heading] = sh.row_values(row)[sh.row_values(0).index(heading)]
+            for heading in open_sheet.row_values(0):
+                data_row[heading] = open_sheet.row_values(row)[
+                    open_sheet.row_values(0).index(heading)
+                ]
 
             data_dicts.append(data_row)
 
@@ -34,7 +45,8 @@ class TextParser:
 
     def parse_tsv(self, filepath, encoding="utf8"):
         """
-        Parse the tsv file at `filepath` into an internal dict list. Optionally, specify the document's encoding.
+        Parse the tsv file at `filepath` into an internal dict list.
+        Optionally, specify the document's encoding.
         Will assume UTF-8 by default
         """
         data_dicts = []
@@ -57,7 +69,8 @@ class TextParser:
 
     def parse_csv(self, filepath, encoding="utf8"):
         """
-        Parse the csv file at `filepath` into an internal dict list. Optionally, specify the document's encoding.
+        Parse the csv file at `filepath` into an internal dict list.
+        Optionally, specify the document's encoding.
         Will assume UTF-8 by default
         """
         data_dicts = []
@@ -106,23 +119,26 @@ class TextParser:
 
     def import_self(self, inpath="./output.pkl"):
         """
-        Loads instance attributes from a pickle file; will prioritize attributes found in the pickle file over preset ones
+        Loads instance attributes from a pickle file; will prioritize
+        attributes found in the pickle file over preset ones
         """
         with open(inpath, "rb") as pickle_in:
             temp = pickle.load(pickle_in)
 
         self.__dict__.update(temp)
 
-    def remove_words(self, key, remove_words=set()):
+    def remove_words(self, key, remove_words):
         """
-        Remove the words in `words` in `data` at the dict key `key`.
+        Remove the words in `remove_words` in `data` at the dict key `key`.
+        `remove_words` should be specified as a `set` object.
         If the data hasn't been stemmed, this does string-matching.
         If the data has been stemmed, this will search through the list of word stems
         """
 
-        if self.data == None:
+        if not self.data:
             raise ValueError("Please parse a text file first!")
-        elif key not in self.data[0].keys():
+
+        if key not in self.data[0].keys():
             raise KeyError("Trying to parse text on a key that doesn't exist")
 
         occurrences = 0
@@ -135,14 +151,14 @@ class TextParser:
             # Loop through each entry in the data dictionary
             for dict_key in data_dict:
 
-                # If this is true, then this is the data to be cleaned/data is in the form of a word list
+                # If this is true, then this is the data to be cleaned/data is a word list
                 if dict_key == key and self.stemmed:
                     new_dict[dict_key] = list(
                         filter(lambda word: word not in remove_words, data_dict[key])
                     )
                     occurrences += len(data_dict[dict_key]) - len(new_dict[dict_key])
 
-                # If this is true, then this is the data to be cleaned/data is in the form of a string
+                # If this is true, then this is the data to be cleaned/data is a string
                 elif dict_key == key:
                     curr_string = data_dict[key]
                     for word in remove_words:
@@ -162,15 +178,17 @@ class TextParser:
         gc.collect()
         return occurrences
 
-    def replace_words(self, key, replacement_map={}):
+    def replace_words(self, key, replacement_map):
         """
         Replace words in `data` at `key` according to mappings in the `replacement_map` dict.
-        For example, set this dict to `{"cat" : "dog"}` to replace all instances of "cat" with "dog".
+        For example, set this dict to `{"cat" : "dog"}` to replace all instances
+        of "cat" with "dog".
         """
 
-        if self.data == None:
+        if not self.data:
             raise ValueError("Please parse a text file first!")
-        elif key not in self.data[0].keys():
+
+        if key not in self.data[0].keys():
             raise KeyError("Trying to parse text on a key that doesn't exist")
 
         new_dicts = []
@@ -182,7 +200,7 @@ class TextParser:
             # Loop through each entry in the data dictionary
             for dict_key in data_dict:
 
-                # If this is true, then this is the data to be cleaned/data is in the form of a word list
+                # If this is true, then this is the data to be cleaned/data is a word list
                 if dict_key == key and self.stemmed:
                     new_word_list = []
                     for word in data_dict[dict_key]:
@@ -193,7 +211,7 @@ class TextParser:
 
                     new_dict[dict_key] = new_word_list
 
-                # If this is true, then this is the data to be cleaned/data is in the form of a string
+                # If this is true, then this is the data to be cleaned/data is a string
                 elif dict_key == key:
                     curr_string = data_dict[dict_key]
                     for word in replacement_map:
@@ -211,9 +229,11 @@ class TextParser:
 
     def lemmatize_stem_words(self, key):
         """
-        Stem and lemmatize words in `data` at the dict key `key` using NLTK's SnowballStemmer and WordNetLemmatizer.
+        Stem and lemmatize words in `data` at the dict key `key` using
+        NLTK's SnowballStemmer and WordNetLemmatizer.
         Also converts words to lowercase.
-        Stemming means removing suffixes and lemmatizing means converting all words to first-person, present tense when possible.
+        Stemming means removing suffixes and lemmatizing means converting
+        all words to first-person, present tense when possible.
         Ignores unknown words or words unable to be altered.
         """
         try:
@@ -223,54 +243,53 @@ class TextParser:
         except:
             raise ImportError("This method requires the gensim and nltk packages.")
 
-        if self.data == None:
+        if not self.data:
             raise ValueError("Please parse a text file first!")
 
-        elif key not in self.data[0].keys():
+        if key not in self.data[0].keys():
             raise KeyError("Trying to parse text on a key that doesn't exist")
 
-        elif self.stemmed:
+        if self.stemmed:
             raise ValueError("Data has already been lemmatized and stemmed")
 
-        else:
-            data_dicts = []
+        data_dicts = []
 
-            # Create Stemmer object
-            stemmer = SnowballStemmer(self.lang)
+        # Create Stemmer object
+        stemmer = SnowballStemmer(self.lang)
 
-            # Iterate through self.data
-            for data_dict in self.data:
-                new_dict = {}
-                for dict_key in data_dict:
+        # Iterate through self.data
+        for data_dict in self.data:
+            new_dict = {}
+            for dict_key in data_dict:
 
-                    # This key is the one to be operated on
-                    if dict_key == key:
-                        result = []
+                # This key is the one to be operated on
+                if dict_key == key:
+                    result = []
 
-                        # Run simple_preprocess and generate a list of tokens from this document
-                        for token in simple_preprocess(data_dict[key], min_len=3):
+                    # Run simple_preprocess and generate a list of tokens from this document
+                    for token in simple_preprocess(data_dict[key], min_len=3):
 
-                            # Ignore stopwords and short words, stem/lemmatize the rest
-                            if token not in STOPWORDS:
-                                lemm_stem = stemmer.stem(
-                                    WordNetLemmatizer().lemmatize(token, pos="v")
-                                )
+                        # Ignore stopwords and short words, stem/lemmatize the rest
+                        if token not in STOPWORDS:
+                            lemm_stem = stemmer.stem(
+                                WordNetLemmatizer().lemmatize(token, pos="v")
+                            )
 
-                                # Append this result to list of words
-                                result.append(lemm_stem)
+                            # Append this result to list of words
+                            result.append(lemm_stem)
 
-                        # Put this list of words back into the data dict
-                        new_dict[dict_key] = result
+                    # Put this list of words back into the data dict
+                    new_dict[dict_key] = result
 
-                    # This key is metadata and should just be copied
-                    else:
-                        new_dict[dict_key] = data_dict[dict_key]
+                # This key is metadata and should just be copied
+                else:
+                    new_dict[dict_key] = data_dict[dict_key]
 
-                data_dicts.append(new_dict)
+            data_dicts.append(new_dict)
 
-            self.data = data_dicts
-            self.stemmed = True
-            gc.collect()
+        self.data = data_dicts
+        self.stemmed = True
+        gc.collect()
 
     def make_dict_and_corpus(self, key):
         """
@@ -288,16 +307,18 @@ class TextParser:
         """
         return [x[key] for x in self.data]
 
-    def filter_data(self, key, acceptable_vals=set(), complement=False):
+    def filter_data(self, key, acceptable_vals, complement=False):
         """
-        Filter dataset so that only the items in `acceptable_vals` appear in the data's `key` heading. 
-        This operation can be complemented by setting `complement` to True. 
-        This function can be called multiple times, but data will be deleted if it doesn't match the filter. 
+        Filter dataset so that only items in `acceptable_vals` appear in the data's `key` heading.
+        `acceptable_vals` should be specified as a `set` object.
+        This operation can be complemented by setting `complement` to True.
+        This can be called multiple times, but data will be deleted if it doesn't match the filter.
         Will return the number of entries removed
         """
-        if self.data is None:
+        if not self.data:
             raise ValueError("Parse a text file first")
-        elif key not in self.data[0].keys():
+
+        if key not in self.data[0].keys():
             raise KeyError("Trying to filter by a key that isn't in the dataset")
 
         temp = []
@@ -308,22 +329,24 @@ class TextParser:
 
         items_removed = len(self.data) - len(temp)
         self.data = temp
+
         return items_removed
 
     def filter_within_time_range(
         self, key, data_format, input_format, start, end, complement=False
     ):
         """
-        Filter dataset so that items with a time attribute are restricted by the time frame from 
-        `start` to `end`. Will include `start` but exclude `end`. 
-        `data_format` specifies how the date appears in the data. 
-        `input_format` specifies how the date appears in the `start` and `end` arguments. 
-        Operation can be complemented by setting `complement` to True. 
+        Filter dataset so that items with a time attribute are restricted by the time frame from
+        `start` to `end`. Will include `start` but exclude `end`.
+        `data_format` specifies how the date appears in the data.
+        `input_format` specifies how the date appears in the `start` and `end` arguments.
+        Operation can be complemented by setting `complement` to True.
         Will return the number of entries removed
         """
-        if self.data is None:
+        if not self.data:
             raise ValueError("Parse a text file first")
-        elif key not in self.data[0].keys():
+
+        if key not in self.data[0].keys():
             raise KeyError("Time key isn't in this dataset")
 
         import datetime
@@ -357,7 +380,7 @@ class TextParser:
 
     def __str__(self):
         stub = "Parser Object\n\tDocuments: %d" % len(self.data)
-        if len(self.data) > 0:
+        if self.data:
             stub += "\n\tHeaders: " + str(self.data[0].keys())
             stub += "\n\tLanguage: " + self.lang
             stub += "\n\tStemmed: " + str(self.stemmed)
@@ -365,6 +388,13 @@ class TextParser:
 
 
 class ImageParser:
+    """
+    WIP: Read image data from a variety of sources and perform various processing tasks on it
+    """
+
+    def __init__(self):
+        self.data = []
+
     def parse_csv(self, filepath, labeled=True):
         """
         Parse the csv file at `filepath` into an internal dict list.
@@ -399,7 +429,8 @@ class ImageParser:
 
     def import_self(self, inpath="./output.pkl"):
         """
-        Loads instance attributes from a pickle file; will prioritize attributes found in the pickle file over preset ones
+        Loads instance attributes from a pickle file.
+        Will prioritize attributes found in the pickle file over preset ones
         """
         with open(inpath, "rb") as pickle_in:
             temp = pickle.load(pickle_in)
