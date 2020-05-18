@@ -6,6 +6,7 @@ import pickle
 import csv
 import gc
 import xlrd
+import datetime
 
 
 class TextParser:
@@ -349,8 +350,6 @@ class TextParser:
         if key not in self.data[0].keys():
             raise KeyError("Time key isn't in this dataset")
 
-        import datetime
-
         date_f = datetime.datetime.strptime(end, input_format)
         date_i = datetime.datetime.strptime(start, input_format)
         temp = []
@@ -377,6 +376,27 @@ class TextParser:
         items_removed = len(self.data) - len(temp)
         self.data = temp
         return items_removed
+
+    def add_datetime_attribute(self, key, data_format, key_to_add, overwrite=False):
+        """
+        Adds a key to the data list called `key_to_add`. This key will hold a `datetime`
+        object which is built from the string at `key` written in the format `data_format`.
+        See documentation for `datetime` to learn how to specify this format.
+        Useful for chronological comparisons in Python
+        """
+        if not self.data:
+            raise ValueError("Parse a text file first")
+
+        if key not in self.data[0].keys():
+            raise KeyError("Time key isn't in this dataset")
+
+        if key_to_add in self.data[0].keys() and not overwrite:
+            raise KeyError(
+                "Trying to add a key with data in it. Set 'overwrite' to True to peform this operation"
+            )
+
+        for item in self.data:
+            item[key_to_add] = datetime.datetime.strptime(item[key], data_format)
 
     def __str__(self):
         stub = "Parser Object\n\tDocuments: %d" % len(self.data)
