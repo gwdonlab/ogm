@@ -406,6 +406,48 @@ class TextParser:
             stub += "\n\tStemmed: " + str(self.stemmed)
         return stub
 
+    def merge_data(self, list_of_textparsers):
+        """
+        For each `TextParser` in `list_of_textparsers`, merge its `data` attribute into this
+        `TextParser`'s `data` attribute. Will check to ensure data doesn't have different headers
+        and hasn't been stemmed. These operations are considered unsafe and will throw exceptions.
+        """
+
+        for parser in list_of_textparsers:
+
+            if not parser.data:
+                print("WARNING: Found empty TextParser. Skipping...")
+                continue
+
+            # Make sure you aren't duplicating a parser
+            if parser is self:
+                raise ValueError("Tried to merge self with self")
+
+            # Make sure parsers aren't stemmed
+            if parser.stemmed or self.stemmed:
+                raise ValueError(
+                    "Merging TextParsers that have already been stemmed is unsafe"
+                )
+
+            # Make sure parsers have the same headers
+            for header in parser.data[0].keys():
+                if header not in self.data[0]:
+                    raise KeyError(
+                        "Merging TextParsers with different headers is unsafe: "
+                        + "Found a key in one of the arguments that isn't in this parser"
+                    )
+
+            for header in self.data[0].keys():
+                if header not in parser.data[0]:
+                    raise KeyError(
+                        "Merging TextParsers with different headers is unsafe: "
+                        + "Found a key in this parser that isn't in one of the arguments"
+                    )
+
+            # Append each data point from parser into this TextParser
+            for datum in parser.data:
+                self.data.append(datum)
+
 
 class ImageParser:
     """
