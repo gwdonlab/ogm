@@ -58,11 +58,7 @@ class TextTrainer(TextParser):
             raise ValueError("Please specify a key to generate dictionary from")
 
         if dictionary is None:
-            from gensim.corpora import Dictionary
-
-            temp = [entry[key] for entry in self.data]
-            self.dictionary = Dictionary(temp)
-            self.corpus = [self.dictionary.doc2bow(doc) for doc in temp]
+            self.make_dict_and_corpus(key)
 
         if not multicore:
             from gensim.models import LdaModel
