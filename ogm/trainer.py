@@ -53,7 +53,7 @@ class TextTrainer(TextParser):
         Will generate a gensim dictionary and BoW structure on the data
         with header `key`, unless this has already been done
         """
-        if key is None:
+        if key is None and self.dictionary is None:
             raise ValueError("Please specify a key to generate dictionary from")
 
         if self.dictionary is None:
@@ -116,11 +116,42 @@ class TextTrainer(TextParser):
         return self.model[doc_vector]
 
     def train_ldaseq(
-        self, key=None, n_topics=100, passes=10, output_path="./ldaseq.model"
+        self,
+        key=None,
+        sort_key=None,
+        n_topics=100,
+        passes=10,
+        seq_counts=None,
+        chain_variance=0.005,
+        output_path="./ldaseq.model",
     ):
         """
         Train a gensim Sequential LDA model. Multicore is currently not supported in gensim,
-        so this model will take quite a bit longer to train
+        so this model will take quite a bit longer to train. `seq_counts` is a list of integers
+        indicating the number of documents in each time slice. Parser will optionally sort its
+        data by the key specified in `sort_key`
         """
 
-        pass
+        if seq_counts is None:
+            raise ValueError("Please specify a list of integers for seq_counts")
+
+        if key is None and self.dictionary is None:
+            raise ValueError("Please specify a key to generate dictionary from")
+
+        if self.dictionary is None:
+            self.make_dict_and_corpus(key)
+
+        if sort_key is not None:
+            self.data.sort(key=lambda r: r[sort_key])
+
+        from gensim.models.ldaseqmodel import LdaSeqModel
+
+        lda_model = LdaSeqModel(
+            corpus=self.corpus,
+            id2word=self.dictionary,
+            time_slice=
+        )
+
+        lda_model.save(output_path)
+        self.model = lda_model
+        self.model_type = "ldaseq"
