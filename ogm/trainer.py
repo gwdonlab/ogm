@@ -14,10 +14,19 @@ class TextTrainer(TextParser):
 
     model_types = {"lda", "ldaseq"}
 
-    def __init__(self, language="english"):
+    def __init__(self, log=None, language="english"):
         super(TextTrainer, self).__init__(language=language)
         self.model_type = None
         self.model = None
+
+        if log is not None:
+            import logging
+
+            logging.basicConfig(
+                filename=log,
+                format="%(asctime)s : %(levelname)s : %(message)s",
+                level=logging.INFO,
+            )
 
     def load_model(self, model_type, input_path):
         """
