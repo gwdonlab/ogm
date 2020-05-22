@@ -158,7 +158,7 @@ class TextTrainer(TextParser):
             self.make_dict_and_corpus(key)
 
         if sort_key is not None:
-            self.data.sort(key=lambda r: r[sort_key])
+            self.data.sort(key=lambda x: x[sort_key])
 
         from gensim.models.ldaseqmodel import LdaSeqModel
 
