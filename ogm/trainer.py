@@ -44,7 +44,6 @@ class TextTrainer(TextParser):
         n_topics=100,
         multicore=True,
         n_workers=4,
-        dictionary=None,
         passes=10,
         output_path="./lda.model",
     ):
@@ -54,10 +53,10 @@ class TextTrainer(TextParser):
         Will generate a gensim dictionary and BoW structure on the data
         with header `key`, unless this has already been done
         """
-        if key is None and self.dictionary is None:
+        if key is None:
             raise ValueError("Please specify a key to generate dictionary from")
 
-        if dictionary is None:
+        if self.dictionary is None:
             self.make_dict_and_corpus(key)
 
         if not multicore:
