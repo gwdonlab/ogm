@@ -12,7 +12,7 @@ class TextTrainer(TextParser):
     Extends `TextParser`
     """
 
-    model_types = {"lda"}
+    model_types = {"lda", "ldaseq"}
 
     def __init__(self, language="english"):
         super(TextTrainer, self).__init__(language=language)
@@ -28,11 +28,18 @@ class TextTrainer(TextParser):
         if model_type not in self.model_types:
             raise KeyError("Unsupported model type")
 
+        self.model_type = model_type
+
         if model_type == "lda":
             from gensim.models import LdaModel
 
             self.model = LdaModel.load(input_path)
-            self.model_type = model_type
+
+        elif model_type == "ldaseq":
+            from gensim.models.ldaseqmodel import LdaSeqModel
+
+            self.model = LdaSeqModel.load(input_path)
+
         else:
             raise ValueError(
                 "Specified model type: " + model_type + " is not yet implemented."
