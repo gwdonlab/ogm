@@ -115,3 +115,13 @@ class TextTrainer(TextParser):
         # Use list of words to predict topics
         doc_vector = self.model.id2word.doc2bow(result)
         return self.model[doc_vector]
+
+    def train_ldaseq(
+        self, key=None, n_topics=100, passes=10, output_path="./ldaseq.model"
+    ):
+        """
+        Train a gensim Sequential LDA model. Multicore is currently not supported in gensim,
+        so this model will take quite a bit longer to train
+        """
+
+        pass
