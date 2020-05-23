@@ -165,7 +165,10 @@ class TextTrainer(TextParser):
         lda_model = LdaSeqModel(
             corpus=self.corpus,
             id2word=self.dictionary,
-            time_slice=
+            time_slice=seq_counts,
+            num_topics=n_topics,
+            chain_variance=chain_variance,
+            passes=passes,
         )
 
         lda_model.save(output_path)
