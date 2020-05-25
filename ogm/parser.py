@@ -50,7 +50,7 @@ class TextParser:
         """
         Parse the tsv file at `filepath` into an internal dict list.
         Optionally, specify the document's encoding.
-        Will assume UTF-8 by default
+        Will assume ISO-8859 encoding by default
         """
         data_dicts = []
         data_temp = []
@@ -74,7 +74,7 @@ class TextParser:
         """
         Parse the csv file at `filepath` into an internal dict list.
         Optionally, specify the document's encoding.
-        Will assume UTF-8 by default
+        Will assume ISO-8859 encoding by default
         """
         data_dicts = []
         data_temp = []
