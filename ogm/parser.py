@@ -1,7 +1,7 @@
 """
 Parser class
 """
-# pylint: disable=bad-continuation, too-many-arguments
+# pylint: disable=bad-continuation, too-many-arguments, too-many-locals
 import pickle
 import csv
 import gc
@@ -400,7 +400,7 @@ class TextParser:
 
         if key_to_add in self.data[0].keys() and not overwrite:
             raise KeyError(
-                "Trying to add a key with data in it. Set 'overwrite' to True to peform this operation"
+                "Trying to add a pre-existing key. Set 'overwrite' to True to ignore"
             )
 
         if self.earliest_data is None:
@@ -415,7 +415,8 @@ class TextParser:
 
     def find_earliest_data(self, key, data_format):
         """
-        Scans data with timestamp `key` formatted with `data_format` to find the earliest-occurring datd point
+        Scans data with timestamp `key` formatted with `data_format`
+        to find the earliest-occurring datd point
         """
         self.earliest_data = datetime.datetime.now()
 
@@ -489,9 +490,10 @@ class TextParser:
         Makes a matplot graph of of the numbers of posts over time. Requires a `key` where
         the timestamps are stored, a `data_format` to allow `datetime` to parse the timestamp,
         and a `days_interval` to tell how large each time interval is.
-        Starts timeline at earliest found timestamp, unless `start_date` is specified with `data_format`.
+        Starts at earliest found timestamp, unless `start_date` is specified with `data_format`.
         Ends at current date, unless `end_date` is specified with `data_format`.
-        Will run `add_datetime_attribute` with key "__added_datetime" if this isn't manually run earlier.
+        Will run `add_datetime_attribute` with key "__added_datetime"
+        if this isn't manually run earlier.
         NOTE: You will need to manually call "plt.show()" after this code runs
         """
 
@@ -549,7 +551,7 @@ class TextParser:
             y_axis_quantities.append(quant_in_timeslice)
             beginning = end_of_timeslice
         if normalize:
-            y_ax = [x/sum(y_axis_quantities) for x in y_axis_quantities]
+            y_ax = [x / sum(y_axis_quantities) for x in y_axis_quantities]
             plt.bar(x_axis_labels, y_ax)
             plt.title("Quantity of data in time frames (normalized)")
             plt.ylabel("Fraction of total documents")
