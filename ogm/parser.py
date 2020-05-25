@@ -494,7 +494,6 @@ class TextParser:
         Ends at current date, unless `end_date` is specified with `data_format`.
         Will run `add_datetime_attribute` with key "__added_datetime"
         if this isn't manually run earlier.
-        NOTE: You will need to manually call "plt.show()" after this code runs
         """
 
         import matplotlib.pyplot as plt
@@ -561,6 +560,8 @@ class TextParser:
             plt.title("Quantity of data in time frames")
             plt.ylabel("Number of documents")
             plt.xlabel("Start day of time frame")
+
+        plt.show()
 
 
 class ImageParser:
