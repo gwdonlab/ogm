@@ -46,7 +46,7 @@ class TextParser:
 
         self.data = data_dicts
 
-    def parse_tsv(self, filepath, encoding="utf8"):
+    def parse_tsv(self, filepath, encoding="iso8859"):
         """
         Parse the tsv file at `filepath` into an internal dict list.
         Optionally, specify the document's encoding.
@@ -70,7 +70,7 @@ class TextParser:
 
         self.data = data_dicts
 
-    def parse_csv(self, filepath, encoding="utf8"):
+    def parse_csv(self, filepath, encoding="iso8859"):
         """
         Parse the csv file at `filepath` into an internal dict list.
         Optionally, specify the document's encoding.
