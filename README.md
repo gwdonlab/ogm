@@ -7,7 +7,7 @@ To install all dependencies, you'll need to run these commands:
 
 ```bash
 pip install cython
-pip intall -r requirements.txt
+pip install -r requirements.txt
 ```
 
 `cython` is an install-time requirement for `gensim`.
