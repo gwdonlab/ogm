@@ -1,7 +1,7 @@
 """
 Parser class
 """
-# pylint: disable=bad-continuation, too-many-arguments, too-many-locals
+# pylint: disable=bad-continuation, too-many-arguments, too-many-locals, too-many-branches
 import pickle
 import csv
 import gc

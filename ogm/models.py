@@ -1,39 +1,47 @@
 """
 Multiclass Naive Bayes SVM (NB-SVM)
 https://github.com/lrei/nbsvm/blob/master/nbsvm2.py
-Luis Rei <luis.rei@ijs.si> 
+Luis Rei <luis.rei@ijs.si>
 @lmrei
 http://luisrei.com
-Learns a multiclass (OneVsRest) classifier based on word ngrams.
-Licensed under a Creative Commons Attribution-NonCommercial 4.0 
+Licensed under a Creative Commons Attribution-NonCommercial 4.0
 International License.
 Based on a work at https://github.com/mesnilgr/nbsvm
 Naive Bayes SVM by Grégoire Mesnil
 
-NBSVM CLASS NOT MODIFIED FROM ORIGINAL
-Changes are purely for formatting, functionality is identical
+Class modified for formatting, functionality is identical to original
 """
-
-import six
+# pylint: disable=invalid-name
 from abc import ABCMeta
+import six
 import numpy as np
 from scipy import sparse
 from scipy.sparse import issparse
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils import check_X_y, check_array
 from sklearn.utils.extmath import safe_sparse_dot
-from sklearn.preprocessing import normalize, binarize, LabelBinarizer
+from sklearn.preprocessing import normalize, LabelBinarizer
 from sklearn.svm import LinearSVC
 
 
 class NBSVM(six.with_metaclass(ABCMeta, BaseEstimator, ClassifierMixin)):
+    """
+    Learns a multiclass (OneVsRest) classifier based on word ngrams.
+    """
+
     def __init__(self, alpha=1.0, C=1.0, max_iter=10000):
         self.alpha = alpha
         self.max_iter = max_iter
         self.C = C
         self.svm_ = []  # fuggly
+        self.class_count_ = None
+        self.classes_ = None
+        self.ratios_ = None
 
     def fit(self, X, y):
+        """
+        Train model with training data `X` to targets `y`
+        """
         X, y = check_X_y(X, y, "csr")
         _, n_features = X.shape
 
@@ -66,6 +74,9 @@ class NBSVM(six.with_metaclass(ABCMeta, BaseEstimator, ClassifierMixin)):
         return self
 
     def predict(self, X):
+        """
+        Predict labels for `X`
+        """
         n_effective_classes = self.class_count_.shape[0]
         n_examples = X.shape[0]
 
