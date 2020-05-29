@@ -12,12 +12,21 @@ class TextTrainer(TextParser):
     Extends `TextParser`
     """
 
-    model_types = {"lda"}
+    model_types = {"lda", "ldaseq"}
 
-    def __init__(self, language="english"):
+    def __init__(self, log=None, language="english"):
         super(TextTrainer, self).__init__(language=language)
         self.model_type = None
         self.model = None
+
+        if log is not None:
+            import logging
+
+            logging.basicConfig(
+                filename=log,
+                format="%(asctime)s : %(levelname)s : %(message)s",
+                level=logging.INFO,
+            )
 
     def load_model(self, model_type, input_path):
         """
@@ -28,11 +37,18 @@ class TextTrainer(TextParser):
         if model_type not in self.model_types:
             raise KeyError("Unsupported model type")
 
+        self.model_type = model_type
+
         if model_type == "lda":
             from gensim.models import LdaModel
 
             self.model = LdaModel.load(input_path)
-            self.model_type = model_type
+
+        elif model_type == "ldaseq":
+            from gensim.models.ldaseqmodel import LdaSeqModel
+
+            self.model = LdaSeqModel.load(input_path)
+
         else:
             raise ValueError(
                 "Specified model type: " + model_type + " is not yet implemented."
@@ -44,7 +60,6 @@ class TextTrainer(TextParser):
         n_topics=100,
         multicore=True,
         n_workers=4,
-        dictionary=None,
         passes=10,
         output_path="./lda.model",
     ):
@@ -57,12 +72,8 @@ class TextTrainer(TextParser):
         if key is None and self.dictionary is None:
             raise ValueError("Please specify a key to generate dictionary from")
 
-        if dictionary is None:
-            from gensim.corpora import Dictionary
-
-            temp = [entry[key] for entry in self.data]
-            self.dictionary = Dictionary(temp)
-            self.corpus = [self.dictionary.doc2bow(doc) for doc in temp]
+        if self.dictionary is None:
+            self.make_dict_and_corpus(key)
 
         if not multicore:
             from gensim.models import LdaModel
@@ -119,3 +130,47 @@ class TextTrainer(TextParser):
         # Use list of words to predict topics
         doc_vector = self.model.id2word.doc2bow(result)
         return self.model[doc_vector]
+
+    def train_ldaseq(
+        self,
+        key=None,
+        sort_key=None,
+        n_topics=100,
+        passes=10,
+        seq_counts=None,
+        chain_variance=0.005,
+        output_path="./ldaseq.model",
+    ):
+        """
+        Train a gensim Sequential LDA model. Multicore is currently not supported in gensim,
+        so this model will take quite a bit longer to train. `seq_counts` is a list of integers
+        indicating the number of documents in each time slice. Parser will optionally sort its
+        data by the key specified in `sort_key`
+        """
+
+        if seq_counts is None:
+            raise ValueError("Please specify a list of integers for seq_counts")
+
+        if key is None and self.dictionary is None:
+            raise ValueError("Please specify a key to generate dictionary from")
+
+        if self.dictionary is None:
+            self.make_dict_and_corpus(key)
+
+        if sort_key is not None:
+            self.data.sort(key=lambda x: x[sort_key])
+
+        from gensim.models.ldaseqmodel import LdaSeqModel
+
+        lda_model = LdaSeqModel(
+            corpus=self.corpus,
+            id2word=self.dictionary,
+            time_slice=seq_counts,
+            num_topics=n_topics,
+            chain_variance=chain_variance,
+            passes=passes,
+        )
+
+        lda_model.save(output_path)
+        self.model = lda_model
+        self.model_type = "ldaseq"

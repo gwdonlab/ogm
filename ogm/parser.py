@@ -1,10 +1,11 @@
 """
 Parser class
 """
-# pylint: disable=bad-continuation, too-many-arguments
+# pylint: disable=bad-continuation, too-many-arguments, too-many-locals, too-many-branches
 import pickle
 import csv
 import gc
+import datetime
 import xlrd
 
 
@@ -23,6 +24,8 @@ class TextParser:
         self.data = []
         self.dictionary = None
         self.corpus = None
+        self.earliest_data = None
+        self.has_datetime = None
 
     def parse_excel(self, filepath, sheet):
         """
@@ -43,11 +46,11 @@ class TextParser:
 
         self.data = data_dicts
 
-    def parse_tsv(self, filepath, encoding="utf8"):
+    def parse_tsv(self, filepath, encoding="iso8859"):
         """
         Parse the tsv file at `filepath` into an internal dict list.
         Optionally, specify the document's encoding.
-        Will assume UTF-8 by default
+        Will assume ISO-8859 encoding by default
         """
         data_dicts = []
         data_temp = []
@@ -67,11 +70,11 @@ class TextParser:
 
         self.data = data_dicts
 
-    def parse_csv(self, filepath, encoding="utf8"):
+    def parse_csv(self, filepath, encoding="iso8859"):
         """
         Parse the csv file at `filepath` into an internal dict list.
         Optionally, specify the document's encoding.
-        Will assume UTF-8 by default
+        Will assume ISO-8859 encoding by default
         """
         data_dicts = []
         data_temp = []
@@ -303,9 +306,10 @@ class TextParser:
 
     def get_texts(self, key):
         """
-        Return a list of texts with header `key`
+        Alias for `get_attribute_list`. Use this function in the future
         """
-        return [x[key] for x in self.data]
+        print("WARNING: get_texts is deprecated. Use get_attribute_list instead")
+        return self.get_attribute_list(key)
 
     def filter_data(self, key, acceptable_vals, complement=False):
         """
@@ -349,8 +353,6 @@ class TextParser:
         if key not in self.data[0].keys():
             raise KeyError("Time key isn't in this dataset")
 
-        import datetime
-
         date_f = datetime.datetime.strptime(end, input_format)
         date_i = datetime.datetime.strptime(start, input_format)
         temp = []
@@ -378,6 +380,53 @@ class TextParser:
         self.data = temp
         return items_removed
 
+    def add_datetime_attribute(self, key, data_format, key_to_add, overwrite=False):
+        """
+        Adds a key to the data list called `key_to_add`. This key will hold a `datetime`
+        object which is built from the string at `key` written in the format `data_format`.
+        See documentation for `datetime` to learn how to specify this format.
+        Useful for chronological comparisons in Python
+        """
+        if self.has_datetime is not None:
+            print(
+                "WARNING: TextParser already has datetime attribute at",
+                self.has_datetime,
+            )
+
+        if not self.data:
+            raise ValueError("Parse a text file first")
+
+        if key not in self.data[0].keys():
+            raise KeyError("Time key isn't in this dataset")
+
+        if key_to_add in self.data[0].keys() and not overwrite:
+            raise KeyError(
+                "Trying to add a pre-existing key. Set 'overwrite' to True to ignore"
+            )
+
+        if self.earliest_data is None:
+            self.earliest_data = datetime.datetime.now()
+
+        for item in self.data:
+            item[key_to_add] = datetime.datetime.strptime(item[key], data_format)
+            if item[key_to_add] < self.earliest_data:
+                self.earliest_data = item[key_to_add]
+
+        self.has_datetime = key_to_add
+
+    def find_earliest_data(self, key, data_format):
+        """
+        Scans data with timestamp `key` formatted with `data_format`
+        to find the earliest-occurring datd point
+        """
+        self.earliest_data = datetime.datetime.now()
+
+        for item in self.data:
+            timestamp = datetime.datetime.strptime(item[key], data_format)
+
+            if timestamp < self.earliest_data:
+                self.earliest_data = timestamp
+
     def __str__(self):
         stub = "Parser Object\n\tDocuments: %d" % len(self.data)
         if self.data:
@@ -386,10 +435,150 @@ class TextParser:
             stub += "\n\tStemmed: " + str(self.stemmed)
         return stub
 
+    def merge_data(self, list_of_textparsers):
+        """
+        For each `TextParser` in `list_of_textparsers`, merge its `data` attribute into this
+        `TextParser`'s `data` attribute. Will check to ensure data doesn't have different headers
+        and hasn't been stemmed. These operations are considered unsafe and will throw exceptions.
+        """
+
+        for parser in list_of_textparsers:
+
+            # Warn user if a passed TextParser is empty
+            if not parser.data:
+                print("WARNING: Found empty TextParser. Skipping...")
+                continue
+
+            # Make sure you aren't duplicating a parser
+            if parser is self:
+                raise ValueError("Tried to merge self with self")
+
+            # Make sure parsers aren't stemmed
+            if parser.stemmed or self.stemmed:
+                raise ValueError(
+                    "Merging TextParsers that have already been stemmed is unsafe"
+                )
+
+            # Make sure parsers have the same headers
+            for header in parser.data[0].keys():
+                if header not in self.data[0]:
+                    raise KeyError(
+                        "Merging TextParsers with different headers is unsafe: "
+                        + "Found a key in one of the arguments that isn't in this parser"
+                    )
+
+            for header in self.data[0].keys():
+                if header not in parser.data[0]:
+                    raise KeyError(
+                        "Merging TextParsers with different headers is unsafe: "
+                        + "Found a key in this parser that isn't in one of the arguments"
+                    )
+
+            # Append each data point from parser into this TextParser
+            for datum in parser.data:
+                self.data.append(datum)
+
+    def plot_data_quantities(
+        self,
+        key,
+        data_format,
+        days_interval,
+        start_date=None,
+        end_date=None,
+        normalize=False,
+        show_plot=True,
+    ):
+        """
+        Makes a matplot graph of of the numbers of posts over time. Requires a `key` where
+        the timestamps are stored, a `data_format` to allow `datetime` to parse the timestamp,
+        and a `days_interval` to tell how large each time interval is.
+        Starts at earliest found timestamp, unless `start_date` is specified with `data_format`.
+        Ends at current date, unless `end_date` is specified with `data_format`.
+        Will run `add_datetime_attribute` with key "__added_datetime"
+        if this isn't manually run earlier. You can choose to automatically display the
+        generated plot or not with the `show_plot` flag. Returns the x and y axes
+        """
+
+        import matplotlib.pyplot as plt
+
+        if not self.has_datetime:
+            self.add_datetime_attribute(key, data_format, "__added_datetime")
+
+        if start_date is None:
+            beginning = self.earliest_data
+        else:
+            beginning = datetime.datetime.strptime(start_date, data_format)
+
+        if end_date is None:
+            end = datetime.datetime.now()
+        else:
+            end = datetime.datetime.strptime(end_date, data_format)
+
+        # Sort data chronologically
+        self.data.sort(key=lambda x: x[self.has_datetime])
+
+        # Initialize empty logistics structures
+        x_axis_labels = []
+        y_axis_quantities = []
+        left_off_at = 0
+
+        # If the user didn't give a start date, we're guaranteed that we should start at index 0
+        if start_date is not None:
+            try:
+                # Find correct index to start counting posts at
+                while self.data[left_off_at][self.has_datetime] < beginning:
+                    left_off_at += 1
+
+            except IndexError:
+                raise ValueError("Couldn't find any posts in specified time frame")
+
+        # Iterate through the data and tally up how many posts are in each bucket
+        # This runs in O(n) time:
+        # left_off_at jumps from timeslice to timeslice,
+        # while the secondary start_index iterator loops through posts within current timeslice
+        while beginning < end:
+            end_of_timeslice = min(
+                beginning + datetime.timedelta(days=days_interval), end
+            )
+            x_axis_labels.append(beginning.strftime("%Y-%m-%d"))
+            start_index = left_off_at
+            quant_in_timeslice = 0
+            while (
+                start_index < len(self.data)
+                and self.data[start_index][self.has_datetime] < end_of_timeslice
+            ):
+                quant_in_timeslice += 1
+                start_index += 1
+            left_off_at = start_index
+            y_axis_quantities.append(quant_in_timeslice)
+            beginning = end_of_timeslice
+        if normalize:
+            y_ax = [x / sum(y_axis_quantities) for x in y_axis_quantities]
+            plt.bar(x_axis_labels, y_ax)
+            plt.title("Quantity of data in time frames (normalized)")
+            plt.ylabel("Fraction of total documents")
+            plt.xlabel("Start day of time frame")
+        else:
+            plt.bar(x_axis_labels, y_axis_quantities)
+            plt.title("Quantity of data in time frames")
+            plt.ylabel("Number of documents")
+            plt.xlabel("Start day of time frame")
+
+        if show_plot:
+            plt.show()
+
+        return x_axis_labels, y_axis_quantities
+
+    def get_attribute_list(self, key):
+        """
+        Return a list of the data contained under the header `key`
+        """
+        return [x[key] for x in self.data]
+
 
 class ImageParser:
     """
-    WIP: Read image data from a variety of sources and perform various processing tasks on it
+    *WIP:* Read image data from a variety of sources and perform various processing tasks on it
     """
 
     def __init__(self):
