@@ -306,9 +306,10 @@ class TextParser:
 
     def get_texts(self, key):
         """
-        Return a list of texts with header `key`
+        Alias for `get_attribute_list`. Use this function in the future
         """
-        return [x[key] for x in self.data]
+        print("WARNING: get_texts is deprecated. Use get_attribute_list instead")
+        return self.get_attribute_list(key)
 
     def filter_data(self, key, acceptable_vals, complement=False):
         """
@@ -567,6 +568,12 @@ class TextParser:
             plt.show()
 
         return x_axis_labels, y_axis_quantities
+
+    def get_attribute_list(self, key):
+        """
+        Return a list of the data contained under the header `key`
+        """
+        return [x[key] for x in self.data]
 
 
 class ImageParser:
