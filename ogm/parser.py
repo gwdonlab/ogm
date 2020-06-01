@@ -487,6 +487,7 @@ class TextParser:
         end_date=None,
         normalize=False,
         show_plot=True,
+        color=None,
     ):
         """
         Makes a matplot graph of of the numbers of posts over time. Requires a `key` where
@@ -496,7 +497,8 @@ class TextParser:
         Ends at current date, unless `end_date` is specified with `data_format`.
         Will run `add_datetime_attribute` with key "__added_datetime"
         if this isn't manually run earlier. You can choose to automatically display the
-        generated plot or not with the `show_plot` flag. Returns the x and y axes
+        generated plot or not with the `show_plot` flag. Returns the x and y axes.
+        The `color` argument must be `None` or a valid matplotlib color code
         """
 
         import matplotlib.pyplot as plt
@@ -554,12 +556,12 @@ class TextParser:
             beginning = end_of_timeslice
         if normalize:
             y_ax = [x / sum(y_axis_quantities) for x in y_axis_quantities]
-            plt.bar(x_axis_labels, y_ax)
+            plt.bar(x_axis_labels, y_ax, color=color)
             plt.title("Quantity of data in time frames (normalized)")
             plt.ylabel("Fraction of total documents")
             plt.xlabel("Start day of time frame")
         else:
-            plt.bar(x_axis_labels, y_axis_quantities)
+            plt.bar(x_axis_labels, y_axis_quantities, color=color)
             plt.title("Quantity of data in time frames")
             plt.ylabel("Number of documents")
             plt.xlabel("Start day of time frame")
