@@ -488,6 +488,7 @@ class TextParser:
         normalize=False,
         show_plot=True,
         color=None,
+        plot_title="Quantity of data in time frames",
     ):
         """
         Makes a matplot graph of of the numbers of posts over time. Requires a `key` where
@@ -554,17 +555,19 @@ class TextParser:
             left_off_at = start_index
             y_axis_quantities.append(quant_in_timeslice)
             beginning = end_of_timeslice
+
+        p_title = plot_title
         if normalize:
             y_ax = [x / sum(y_axis_quantities) for x in y_axis_quantities]
             plt.bar(x_axis_labels, y_ax, color=color)
-            plt.title("Quantity of data in time frames (normalized)")
+            p_title += " (data normalized)"
             plt.ylabel("Fraction of total documents")
-            plt.xlabel("Start day of time frame")
         else:
             plt.bar(x_axis_labels, y_axis_quantities, color=color)
-            plt.title("Quantity of data in time frames")
             plt.ylabel("Number of documents")
-            plt.xlabel("Start day of time frame")
+
+        plt.title(p_title)
+        plt.xlabel("Start day of time frame")
 
         if show_plot:
             plt.show()
