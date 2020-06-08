@@ -580,6 +580,27 @@ class TextParser:
         """
         return [x[key] for x in self.data]
 
+    def write_data(
+        self, filepath, delimiter=",", write_headers=True, encoding="iso8859"
+    ):
+        """
+        Write data out to a csv-like file at `filepath`.
+        The delimiter (comma by default) can be anything
+        """
+
+        headers = self.data[0].keys()
+
+        with open(filepath, "w", newline="", encoding=encoding) as outfile:
+            filewriter = csv.DictWriter(
+                outfile, delimiter=delimiter, fieldnames=headers
+            )
+
+            if write_headers:
+                filewriter.writeheader()
+
+            for item in self.data:
+                filewriter.writerow(item)
+
 
 class ImageParser:
     """
