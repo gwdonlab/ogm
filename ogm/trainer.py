@@ -100,7 +100,7 @@ class TextTrainer(TextParser):
         self.model = lda_model
         self.model_type = "lda"
 
-    def predict_lda(self, input_data):
+    def predict(self, input_data):
         """
         Use an internal LDA model to make a prediction about the topic distribution
         in the `input_data` document, which is just a string
@@ -174,3 +174,22 @@ class TextTrainer(TextParser):
         lda_model.save(output_path)
         self.model = lda_model
         self.model_type = "ldaseq"
+
+    def predict_internal(self, key, key_to_add):
+        '''
+        Uses the self.model to predict categories for the all the self.data with header `key`. 
+        Will add these category predictions to the header `key_to_add`.
+        '''
+
+        if self.model is None:
+            raise ValueError("No trained model in this TextTrainer")
+
+        if self.model_type != "ldaseq":
+            raise ValueError("Model type is " + self.model_type)
+
+        if not self.stemmed:
+            self.lemmatize_stem_words(key)
+
+        for item in self.data:
+            doc_vector = self.model.id2word.doc2bow(item[key])
+            item[key_to_add] = self.model[doc_vector]
