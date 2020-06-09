@@ -180,6 +180,7 @@ class TextTrainer(TextParser):
         Uses the self.model to predict categories for the all the self.data with header `key`. 
         Will add these category predictions to the header `key_to_add`.
         '''
+        import tqdm
 
         if self.model is None:
             raise ValueError("No trained model in this TextTrainer")
@@ -190,6 +191,6 @@ class TextTrainer(TextParser):
         if not self.stemmed:
             self.lemmatize_stem_words(key)
 
-        for item in self.data:
+        for item in tqdm.tqdm(self.data):
             doc_vector = self.model.id2word.doc2bow(item[key])
             item[key_to_add] = self.model[doc_vector]
