@@ -27,7 +27,7 @@ class TextParser:
         self.earliest_data = None
         self.has_datetime = None
 
-    def parse_excel(self, filepath, sheet):
+    def parse_excel(self, filepath, sheet=0):
         """
         Parse the Sheet `sheet` (0-indexed) in the Excel file at
         `filepath` into an internal dict list
