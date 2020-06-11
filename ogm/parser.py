@@ -48,29 +48,11 @@ class TextParser:
 
     def parse_tsv(self, filepath, encoding="iso8859"):
         """
-        Parse the tsv file at `filepath` into an internal dict list.
-        Optionally, specify the document's encoding.
-        Will assume ISO-8859 encoding by default
+        Calls `parse_csv` with delimiter "\\t"
         """
-        data_dicts = []
-        data_temp = []
+        self.parse_csv(filepath, encoding=encoding, delimiter="\t")
 
-        with open(filepath, "r", encoding=encoding) as tsvin:
-            tsvin = csv.reader(tsvin, delimiter="\t")
-
-            for row in tsvin:
-                data_temp.append(row)
-
-        for row in data_temp[1:]:
-            data_row = {}
-            for heading in data_temp[0]:
-                data_row[heading] = row[data_temp[0].index(heading)]
-
-            data_dicts.append(data_row)
-
-        self.data = data_dicts
-
-    def parse_csv(self, filepath, encoding="iso8859"):
+    def parse_csv(self, filepath, encoding="iso8859", delimiter=","):
         """
         Parse the csv file at `filepath` into an internal dict list.
         Optionally, specify the document's encoding.
@@ -80,7 +62,7 @@ class TextParser:
         data_temp = []
 
         with open(filepath, "r", encoding=encoding) as csvin:
-            csvin = csv.reader(csvin)
+            csvin = csv.reader(csvin, delimiter=delimiter)
 
             for row in csvin:
                 data_temp.append(row)
