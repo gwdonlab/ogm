@@ -177,7 +177,7 @@ class TextTrainer(TextParser):
 
     def predict_internal(self, key, key_to_add):
         '''
-        Uses the self.model to predict categories for the all the self.data with header `key`. 
+        Uses the self.model to predict categories for the all the self.data with header `key`.
         Will add these category predictions to the header `key_to_add`.
         '''
         import tqdm
