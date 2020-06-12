@@ -6,7 +6,6 @@ setuptools.setup(
     author="Richard Sear",
     author_email="searri@gwu.edu",
     description="Package for using machine learning to analyze the behavior of online groups",
-    long_description_content_type="text/markdown",
     url="https://github.com/gwclusterlab/ogm",
     packages=setuptools.find_packages(),
     classifiers=[

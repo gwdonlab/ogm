@@ -566,6 +566,23 @@ class TextParser:
         self, filepath, delimiter=",", write_headers=True, encoding="iso8859"
     ):
         """
+        Deprecated function
+        """
+        print(
+            "WARNING: write_data will be removed in a future version. Use write_csv instead"
+        )
+
+        self.write_csv(
+            filepath,
+            delimiter=delimiter,
+            write_headers=write_headers,
+            encoding=encoding,
+        )
+
+    def write_csv(
+        self, filepath, delimiter=",", write_headers=True, encoding="iso8859"
+    ):
+        """
         Write data out to a csv-like file at `filepath`.
         The delimiter (comma by default) can be anything
         """
@@ -582,6 +599,20 @@ class TextParser:
 
             for item in self.data:
                 filewriter.writerow(item)
+
+    def merge_words(self, key, new_key=None):
+        '''
+        For all data points, merges a list of words in `key` into a string at `key` instead,
+        unless `new_key` is not `None`
+        '''
+        if new_key is None:
+            dest = key
+        else:
+            dest = new_key
+
+        for item in self.data:
+            new_string = " ".join(item[key])
+            item[dest] = new_string
 
 
 class ImageParser:
