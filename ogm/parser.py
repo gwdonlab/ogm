@@ -1,7 +1,7 @@
 """
 Parser class
 """
-# pylint: disable=bad-continuation, too-many-arguments, too-many-locals, too-many-branches
+# pylint: disable=bad-continuation, too-many-arguments, too-many-locals, too-many-branches, too-many-public-methods
 import pickle
 import csv
 import gc
@@ -27,7 +27,7 @@ class TextParser:
         self.earliest_data = None
         self.has_datetime = None
 
-    def parse_excel(self, filepath, sheet):
+    def parse_excel(self, filepath, sheet=0):
         """
         Parse the Sheet `sheet` (0-indexed) in the Excel file at
         `filepath` into an internal dict list
@@ -48,29 +48,11 @@ class TextParser:
 
     def parse_tsv(self, filepath, encoding="iso8859"):
         """
-        Parse the tsv file at `filepath` into an internal dict list.
-        Optionally, specify the document's encoding.
-        Will assume ISO-8859 encoding by default
+        Calls `parse_csv` with delimiter "\\t"
         """
-        data_dicts = []
-        data_temp = []
+        self.parse_csv(filepath, encoding=encoding, delimiter="\t")
 
-        with open(filepath, "r", encoding=encoding) as tsvin:
-            tsvin = csv.reader(tsvin, delimiter="\t")
-
-            for row in tsvin:
-                data_temp.append(row)
-
-        for row in data_temp[1:]:
-            data_row = {}
-            for heading in data_temp[0]:
-                data_row[heading] = row[data_temp[0].index(heading)]
-
-            data_dicts.append(data_row)
-
-        self.data = data_dicts
-
-    def parse_csv(self, filepath, encoding="iso8859"):
+    def parse_csv(self, filepath, encoding="iso8859", delimiter=","):
         """
         Parse the csv file at `filepath` into an internal dict list.
         Optionally, specify the document's encoding.
@@ -80,7 +62,7 @@ class TextParser:
         data_temp = []
 
         with open(filepath, "r", encoding=encoding) as csvin:
-            csvin = csv.reader(csvin)
+            csvin = csv.reader(csvin, delimiter=delimiter)
 
             for row in csvin:
                 data_temp.append(row)
@@ -487,6 +469,8 @@ class TextParser:
         end_date=None,
         normalize=False,
         show_plot=True,
+        color=None,
+        plot_title="Quantity of data in time frames",
     ):
         """
         Makes a matplot graph of of the numbers of posts over time. Requires a `key` where
@@ -496,7 +480,8 @@ class TextParser:
         Ends at current date, unless `end_date` is specified with `data_format`.
         Will run `add_datetime_attribute` with key "__added_datetime"
         if this isn't manually run earlier. You can choose to automatically display the
-        generated plot or not with the `show_plot` flag. Returns the x and y axes
+        generated plot or not with the `show_plot` flag. Returns the x and y axes.
+        The `color` argument must be `None` or a valid matplotlib color code
         """
 
         import matplotlib.pyplot as plt
@@ -552,17 +537,19 @@ class TextParser:
             left_off_at = start_index
             y_axis_quantities.append(quant_in_timeslice)
             beginning = end_of_timeslice
+
+        p_title = plot_title
         if normalize:
             y_ax = [x / sum(y_axis_quantities) for x in y_axis_quantities]
-            plt.bar(x_axis_labels, y_ax)
-            plt.title("Quantity of data in time frames (normalized)")
+            plt.bar(x_axis_labels, y_ax, color=color)
+            p_title += " (data normalized)"
             plt.ylabel("Fraction of total documents")
-            plt.xlabel("Start day of time frame")
         else:
-            plt.bar(x_axis_labels, y_axis_quantities)
-            plt.title("Quantity of data in time frames")
+            plt.bar(x_axis_labels, y_axis_quantities, color=color)
             plt.ylabel("Number of documents")
-            plt.xlabel("Start day of time frame")
+
+        plt.title(p_title)
+        plt.xlabel("Start day of time frame")
 
         if show_plot:
             plt.show()
@@ -574,6 +561,58 @@ class TextParser:
         Return a list of the data contained under the header `key`
         """
         return [x[key] for x in self.data]
+
+    def write_data(
+        self, filepath, delimiter=",", write_headers=True, encoding="iso8859"
+    ):
+        """
+        Deprecated function
+        """
+        print(
+            "WARNING: write_data will be removed in a future version. Use write_csv instead"
+        )
+
+        self.write_csv(
+            filepath,
+            delimiter=delimiter,
+            write_headers=write_headers,
+            encoding=encoding,
+        )
+
+    def write_csv(
+        self, filepath, delimiter=",", write_headers=True, encoding="iso8859"
+    ):
+        """
+        Write data out to a csv-like file at `filepath`.
+        The delimiter (comma by default) can be anything
+        """
+
+        headers = self.data[0].keys()
+
+        with open(filepath, "w", newline="", encoding=encoding) as outfile:
+            filewriter = csv.DictWriter(
+                outfile, delimiter=delimiter, fieldnames=headers
+            )
+
+            if write_headers:
+                filewriter.writeheader()
+
+            for item in self.data:
+                filewriter.writerow(item)
+
+    def merge_words(self, key, new_key=None):
+        '''
+        For all data points, merges a list of words in `key` into a string at `key` instead,
+        unless `new_key` is not `None`
+        '''
+        if new_key is None:
+            dest = key
+        else:
+            dest = new_key
+
+        for item in self.data:
+            new_string = " ".join(item[key])
+            item[dest] = new_string
 
 
 class ImageParser:
