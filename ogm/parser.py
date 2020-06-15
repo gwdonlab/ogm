@@ -601,10 +601,10 @@ class TextParser:
                 filewriter.writerow(item)
 
     def merge_words(self, key, new_key=None):
-        '''
+        """
         For all data points, merges a list of words in `key` into a string at `key` instead,
         unless `new_key` is not `None`
-        '''
+        """
         if new_key is None:
             dest = key
         else:
@@ -613,6 +613,13 @@ class TextParser:
         for item in self.data:
             new_string = " ".join(item[key])
             item[dest] = new_string
+
+    def filter_doc_length(self, key, min_length, complement=False):
+        """
+        Removes all documents at `key` with length shorter than `min_length`
+        """
+
+        self.data = [x for x in self.data if len(x[key]) >= min_length]
 
 
 class ImageParser:
