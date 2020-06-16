@@ -50,6 +50,7 @@ class TextParser:
         """
         Calls `parse_csv` with delimiter "\\t"
         """
+        print("DEPRECATION WARNING: parse_tsv")
         self.parse_csv(filepath, encoding=encoding, delimiter="\t")
 
     def parse_csv(self, filepath, encoding="iso8859", delimiter=","):
