@@ -77,24 +77,19 @@ class TextParser:
 
         self.data = data_dicts
 
-    def parse_pdf(self, filepath):
+    def parse_pdf(self, filepath, append=True):
         """
-        Read the text in the PDF at `filepath` into `self.data` -- not recommended
+        Read the text in the PDF at `filepath` into `self.data`
+        If `append` is False, will overwrite `self.data`
         Uses the tika package
         """
         from tika import parser
 
         raw = parser.from_file(filepath)
-        self.data = [{"text": raw["content"]}]
-
-    def parse_add_pdf(self, filepath):
-        """
-        Just like `parse_pdf`, but will add the text to the data rather than replacing it
-        """
-        from tika import parser
-
-        raw = parser.from_file(filepath)
-        self.data.append({"text": raw["content"]})
+        if append:
+            self.data.append({"text": raw["content"]})
+        else:
+            self.data = [{"text": raw["content"]}]
 
     def export_self(self, outpath="./output.pkl"):
         """
