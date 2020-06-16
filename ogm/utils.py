@@ -11,7 +11,7 @@ def text_data_preprocess(setup_dict):
     from ogm.parser import TextParser
 
     # Absolute path to tsv data file
-    data_file = setup_dict["data_path"]
+    data_file = setup_dict["input_path"]
 
     # Optional language attribute in setup
     if "lang" in setup_dict:
