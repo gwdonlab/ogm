@@ -4,9 +4,10 @@ This is mainly here to reduce code duplication
 """
 
 
-def text_data_preprocess(setup_dict):
+def text_data_preprocess(setup_dict, output=True):
     """
     Run preprocessing on text data; `setup_dict` should be in JSON format described in README
+    Set `output` to write processed data into a file, otherwise this will return the parser's data
     """
     from ogm.parser import TextParser
 
@@ -67,10 +68,15 @@ def text_data_preprocess(setup_dict):
     if "min_length" in setup_dict:
         parser.filter_doc_length(setup_dict["text_key"], setup_dict["min_length"])
 
-    # Required output path attribute
-    if "encoding" in setup_dict:
-        parser.write_csv(
-            setup_dict["output_path"], delimiter="\t", encoding=setup_dict["encoding"]
-        )
+    # Required output path attribute if this arg is true
+    if output:
+        if "encoding" in setup_dict:
+            parser.write_csv(
+                setup_dict["output_path"],
+                delimiter="\t",
+                encoding=setup_dict["encoding"],
+            )
+        else:
+            parser.write_csv(setup_dict["output_path"], delimiter="\t")
     else:
-        parser.write_csv(setup_dict["output_path"], delimiter="\t")
+        return parser.data
