@@ -270,7 +270,6 @@ class TextParser:
 
         self.data = data_dicts
         self.stemmed = True
-        gc.collect()
 
     def make_dict_and_corpus(self, key):
         """
