@@ -1,16 +1,7 @@
 """
-Multiclass Naive Bayes SVM (NB-SVM)
-https://github.com/lrei/nbsvm/blob/master/nbsvm2.py
-Luis Rei <luis.rei@ijs.si>
-@lmrei
-http://luisrei.com
-Licensed under a Creative Commons Attribution-NonCommercial 4.0
-International License.
-Based on a work at https://github.com/mesnilgr/nbsvm
-Naive Bayes SVM by Grégoire Mesnil
-
-Class modified for formatting, functionality is identical to original
+Models not included in external dependencies
 """
+
 # pylint: disable=invalid-name
 from abc import ABCMeta
 import six
@@ -26,7 +17,17 @@ from sklearn.svm import LinearSVC
 
 class NBSVM(six.with_metaclass(ABCMeta, BaseEstimator, ClassifierMixin)):
     """
-    Learns a multiclass (OneVsRest) classifier based on word ngrams.
+    Multiclass Naive Bayes SVM (NB-SVM)
+    https://github.com/lrei/nbsvm/blob/master/nbsvm2.py
+    Luis Rei <luis.rei@ijs.si>
+    @lmrei
+    http://luisrei.com
+    Licensed under a Creative Commons Attribution-NonCommercial 4.0
+    International License.
+    Based on a work at https://github.com/mesnilgr/nbsvm
+    Naive Bayes SVM by Grégoire Mesnil
+
+    Class modified for formatting, functionality is identical to original
     """
 
     def __init__(self, alpha=1.0, C=1.0, max_iter=10000):
