@@ -6,12 +6,12 @@ This is mainly here to reduce code duplication
 
 def text_data_preprocess(setup_dict, output=True):
     """
-    Run preprocessing on text data; `setup_dict` should be in JSON format described in README
-    Set `output` to write processed data into a file, otherwise this will return the parser's data
+    Run preprocessing on text data; `setup_dict` should be in JSON format described in README.
+    Set `output` to write processed data into a file, otherwise this will return the parser's data.
     """
     from ogm.parser import TextParser
 
-    # Absolute path to tsv data file
+    # Absolute path to data file
     data_file = setup_dict["input_path"]
 
     # Optional language attribute in setup
@@ -22,9 +22,18 @@ def text_data_preprocess(setup_dict, output=True):
 
     # Optional text encoding attribute in setup
     if "encoding" in setup_dict:
-        parser.parse_csv(data_file, delimiter="\t", encoding=setup_dict["encoding"])
+        file_encoding = setup_dict["encoding"]
     else:
-        parser.parse_csv(data_file, delimiter="\t")
+        file_encoding = "iso8859"
+
+    if data_file.endswith(".tsv"):
+        parser.parse_csv(data_file, delimiter="\t", encoding=file_encoding)
+    elif data_file.endswith(".csv"):
+        parser.parse_csv(data_file, encoding=file_encoding)
+    elif data_file.endswith(".xlsx"):
+        parser.parse_excel(data_file)
+    else:
+        raise IOError("Unsupported file type")
 
     # Optional time frame attribute
     if "time_filter" in setup_dict:
@@ -70,13 +79,9 @@ def text_data_preprocess(setup_dict, output=True):
 
     # Required output path attribute if this arg is true
     if output:
-        if "encoding" in setup_dict:
-            parser.write_csv(
-                setup_dict["output_path"],
-                delimiter="\t",
-                encoding=setup_dict["encoding"],
-            )
-        else:
-            parser.write_csv(setup_dict["output_path"], delimiter="\t")
+        parser.write_csv(
+            setup_dict["output_path"], delimiter="\t", encoding=file_encoding
+        )
+
     else:
         return parser.data
