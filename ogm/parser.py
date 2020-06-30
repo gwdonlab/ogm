@@ -4,9 +4,7 @@ Parser class
 # pylint: disable=bad-continuation, too-many-arguments, too-many-locals, too-many-branches, too-many-public-methods
 import pickle
 import csv
-import gc
 import datetime
-import xlrd
 
 
 class TextParser:
@@ -32,6 +30,8 @@ class TextParser:
         Parse the Sheet `sheet` (0-indexed) in the Excel file at
         `filepath` into an internal dict list
         """
+        import xlrd
+
         data_dicts = []
 
         open_sheet = xlrd.open_workbook(filepath).sheet_by_index(sheet)
@@ -156,7 +156,6 @@ class TextParser:
             new_dicts.append(new_dict)
 
         self.data = new_dicts
-        gc.collect()
         return occurrences
 
     def replace_words(self, key, replacement_map):
@@ -206,7 +205,6 @@ class TextParser:
             new_dicts.append(new_dict)
 
         self.data = new_dicts
-        gc.collect()
 
     def lemmatize_stem_words(self, key):
         """
