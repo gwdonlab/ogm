@@ -55,7 +55,7 @@ class TextParser:
 
     def parse_csv(self, filepath, encoding="iso8859", delimiter=","):
         """
-        Parse the csv file at `filepath` into an internal dict list.
+        Parse the csv-like file at `filepath` into an internal dict list.
         Optionally, specify the document's encoding.
         Will assume ISO-8859 encoding by default
         """
@@ -79,8 +79,8 @@ class TextParser:
 
     def parse_pdf(self, filepath, append=True):
         """
-        Read the text in the PDF at `filepath` into `self.data`
-        If `append` is False, will overwrite `self.data`
+        Read the text in the PDF at `filepath` into `self.data`.
+        If `append` is False, will overwrite `self.data`.
         Uses the tika package
         """
         from tika import parser
