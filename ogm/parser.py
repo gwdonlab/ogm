@@ -91,6 +91,19 @@ class TextParser:
         else:
             self.data = [{"text": raw["content"]}]
 
+    def parse_rds(self, filepath):
+        """
+        Read RDS file at `filepath` into `self.data`.
+        Uses the rpy2 package, so R must be installed to use this
+        """
+        import rpy2.robjects as robjects
+        from rpy2.robjects import pandas2ri
+
+        pandas2ri.activate()
+        readRDS = robjects.r["readRDS"]
+        df = readRDS(filepath)
+        self.data = df.to_dict("records")
+
     def export_self(self, outpath="./output.pkl"):
         """
         Dumps all instance variables into a pickle file
