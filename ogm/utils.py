@@ -32,6 +32,8 @@ def text_data_preprocess(setup_dict, output=True):
         parser.parse_csv(data_file, encoding=file_encoding)
     elif data_file.endswith(".xlsx"):
         parser.parse_excel(data_file)
+    elif data_file.endswith(".rds"):
+        parser.parse_rds(data_file)
     else:
         raise IOError("Unsupported file type")
 
