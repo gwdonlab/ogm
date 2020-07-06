@@ -100,9 +100,9 @@ class TextParser:
         from rpy2.robjects import pandas2ri
 
         pandas2ri.activate()
-        readRDS = robjects.r["readRDS"]
-        df = readRDS(filepath)
-        self.data = df.to_dict("records")
+        read_rds = robjects.r["readRDS"]
+        dataframe_temp = read_rds(filepath)
+        self.data = dataframe_temp.to_dict("records")
 
     def export_self(self, outpath="./output.pkl"):
         """
@@ -624,8 +624,10 @@ class TextParser:
         """
         Removes all documents at `key` with length shorter than `min_length`
         """
-
-        self.data = [x for x in self.data if len(x[key]) >= min_length]
+        if not complement:
+            self.data = [x for x in self.data if len(x[key]) >= min_length]
+        else:
+            self.data = [x for x in self.data if len(x[key]) < min_length]
 
 
 class ImageParser:

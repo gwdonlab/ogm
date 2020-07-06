@@ -3,6 +3,8 @@ Commonly-used utility functions
 This is mainly here to reduce code duplication
 """
 
+# pylint: disable=too-many-branches
+
 
 def text_data_preprocess(setup_dict, output=True):
     """
@@ -85,5 +87,6 @@ def text_data_preprocess(setup_dict, output=True):
             setup_dict["output_path"], delimiter="\t", encoding=file_encoding
         )
 
-    else:
-        return parser.data
+        return None
+
+    return parser.data
