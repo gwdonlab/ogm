@@ -4,9 +4,7 @@ Parser class
 # pylint: disable=bad-continuation, too-many-arguments, too-many-locals, too-many-branches, too-many-public-methods
 import pickle
 import csv
-import gc
 import datetime
-import xlrd
 
 
 class TextParser:
@@ -32,6 +30,8 @@ class TextParser:
         Parse the Sheet `sheet` (0-indexed) in the Excel file at
         `filepath` into an internal dict list
         """
+        import xlrd
+
         data_dicts = []
 
         open_sheet = xlrd.open_workbook(filepath).sheet_by_index(sheet)
@@ -50,11 +50,12 @@ class TextParser:
         """
         Calls `parse_csv` with delimiter "\\t"
         """
+        print("DEPRECATION WARNING: parse_tsv")
         self.parse_csv(filepath, encoding=encoding, delimiter="\t")
 
     def parse_csv(self, filepath, encoding="iso8859", delimiter=","):
         """
-        Parse the csv file at `filepath` into an internal dict list.
+        Parse the csv-like file at `filepath` into an internal dict list.
         Optionally, specify the document's encoding.
         Will assume ISO-8859 encoding by default
         """
@@ -76,24 +77,32 @@ class TextParser:
 
         self.data = data_dicts
 
-    def parse_pdf(self, filepath):
+    def parse_pdf(self, filepath, append=True):
         """
-        Read the text in the PDF at `filepath` into `self.data` -- not recommended
+        Read the text in the PDF at `filepath` into `self.data`.
+        If `append` is False, will overwrite `self.data`.
         Uses the tika package
         """
         from tika import parser
 
         raw = parser.from_file(filepath)
-        self.data = [{"text": raw["content"]}]
+        if append:
+            self.data.append({"text": raw["content"]})
+        else:
+            self.data = [{"text": raw["content"]}]
 
-    def parse_add_pdf(self, filepath):
+    def parse_rds(self, filepath):
         """
-        Just like `parse_pdf`, but will add the text to the data rather than replacing it
+        Read RDS file at `filepath` into `self.data`.
+        Uses the rpy2 package, so R must be installed to use this
         """
-        from tika import parser
+        import rpy2.robjects as robjects
+        from rpy2.robjects import pandas2ri
 
-        raw = parser.from_file(filepath)
-        self.data.append({"text": raw["content"]})
+        pandas2ri.activate()
+        read_rds = robjects.r["readRDS"]
+        dataframe_temp = read_rds(filepath)
+        self.data = dataframe_temp.to_dict("records")
 
     def export_self(self, outpath="./output.pkl"):
         """
@@ -160,7 +169,6 @@ class TextParser:
             new_dicts.append(new_dict)
 
         self.data = new_dicts
-        gc.collect()
         return occurrences
 
     def replace_words(self, key, replacement_map):
@@ -210,7 +218,6 @@ class TextParser:
             new_dicts.append(new_dict)
 
         self.data = new_dicts
-        gc.collect()
 
     def lemmatize_stem_words(self, key):
         """
@@ -274,7 +281,6 @@ class TextParser:
 
         self.data = data_dicts
         self.stemmed = True
-        gc.collect()
 
     def make_dict_and_corpus(self, key):
         """
@@ -601,10 +607,10 @@ class TextParser:
                 filewriter.writerow(item)
 
     def merge_words(self, key, new_key=None):
-        '''
+        """
         For all data points, merges a list of words in `key` into a string at `key` instead,
         unless `new_key` is not `None`
-        '''
+        """
         if new_key is None:
             dest = key
         else:
@@ -613,6 +619,15 @@ class TextParser:
         for item in self.data:
             new_string = " ".join(item[key])
             item[dest] = new_string
+
+    def filter_doc_length(self, key, min_length, complement=False):
+        """
+        Removes all documents at `key` with length shorter than `min_length`
+        """
+        if not complement:
+            self.data = [x for x in self.data if len(x[key]) >= min_length]
+        else:
+            self.data = [x for x in self.data if len(x[key]) < min_length]
 
 
 class ImageParser:
