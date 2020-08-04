@@ -90,3 +90,19 @@ def text_data_preprocess(setup_dict, output=True):
         return None
 
     return parser.data
+
+
+def from_excel_ordinal(ordinal):
+    """
+    Convert Excel ordinal numbers to a datetime object
+    Taken from this StackOverflow answer:
+    https://stackoverflow.com/questions/29387137/how-to-convert-a-given-ordinal-number-from-excel-to-a-date
+    """
+    from datetime import datetime, timedelta
+
+    _epoch0 = datetime(1899, 12, 31)
+
+    if ordinal >= 60:
+        ordinal -= 1  # Excel leap year bug, 1900 is not a leap year!
+
+    return (_epoch0 + timedelta(days=ordinal)).replace(microsecond=0)
