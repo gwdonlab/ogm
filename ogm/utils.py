@@ -37,6 +37,8 @@ def text_data_preprocess(setup_dict, output=True):
         parser.parse_excel(data_file)
     elif data_file.endswith(".rds"):
         parser.parse_rds(data_file)
+    elif data_file.endswith(".pkl"):
+        parser.import_self(data_file)
     else:
         raise IOError("Unsupported file type")
 
