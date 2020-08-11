@@ -12,6 +12,7 @@ def text_data_preprocess(setup_dict, output=True):
     Set `output` to write processed data into a file, otherwise this will return the parser's data.
     """
     from ogm.parser import TextParser
+    import re
 
     # Absolute path to data file
     data_file = setup_dict["input_path"]
@@ -36,6 +37,8 @@ def text_data_preprocess(setup_dict, output=True):
         parser.parse_excel(data_file)
     elif data_file.endswith(".rds"):
         parser.parse_rds(data_file)
+    elif data_file.endswith(".pkl"):
+        parser.import_self(data_file)
     else:
         raise IOError("Unsupported file type")
 
@@ -54,6 +57,39 @@ def text_data_preprocess(setup_dict, output=True):
         for attr_filter in setup_dict["attribute_filters"]:
             parser.filter_data(
                 attr_filter["filter_key"], set(attr_filter["filter_vals"])
+            )
+
+    if "remove_emoji" in setup_dict:
+        # Taken from this Gist:
+        # https://gist.github.com/slowkow/7a7f61f495e3dbb7e3d767f97bd7304b#gistcomment-3315605
+
+        emoji_pattern = re.compile(
+            "["
+            u"\U0001F600-\U0001F64F"  # emoticons
+            u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+            u"\U0001F680-\U0001F6FF"  # transport & map symbols
+            u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
+            u"\U00002500-\U00002BEF"  # chinese char
+            u"\U00002702-\U000027B0"
+            u"\U00002702-\U000027B0"
+            u"\U000024C2-\U0001F251"
+            u"\U0001f926-\U0001f937"
+            u"\U00010000-\U0010ffff"
+            u"\u2640-\u2642"
+            u"\u2600-\u2B55"
+            u"\u200d"
+            u"\u23cf"
+            u"\u23e9"
+            u"\u231a"
+            u"\ufe0f"  # dingbats
+            u"\u3030"
+            "]+",
+            flags=re.UNICODE,
+        )
+
+        for item in parser.data:
+            item[setup_dict["text_key"]] = emoji_pattern.sub(
+                r" ", item[setup_dict["text_key"]]
             )
 
     if "replace_before_stemming" in setup_dict:
@@ -90,3 +126,19 @@ def text_data_preprocess(setup_dict, output=True):
         return None
 
     return parser.data
+
+
+def from_excel_ordinal(ordinal):
+    """
+    Convert Excel ordinal numbers to a datetime object
+    Taken from this StackOverflow answer:
+    https://stackoverflow.com/questions/29387137/how-to-convert-a-given-ordinal-number-from-excel-to-a-date
+    """
+    from datetime import datetime, timedelta
+
+    _epoch0 = datetime(1899, 12, 31)
+
+    if ordinal >= 60:
+        ordinal -= 1  # Excel leap year bug, 1900 is not a leap year!
+
+    return (_epoch0 + timedelta(days=ordinal)).replace(microsecond=0)

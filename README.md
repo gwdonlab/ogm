@@ -6,13 +6,10 @@ Package for using machine learning to analyze the behavior of online groups
 To install all dependencies, you'll need to run these commands:
 
 ```bash
-pip install cython
 pip install -r requirements.txt
 ```
 
-`cython` is an install-time requirement for `gensim`.
-
 Finally, run:
 ```bash
-python setup.py develop
+python setup.py install
 ```

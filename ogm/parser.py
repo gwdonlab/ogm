@@ -69,6 +69,11 @@ class TextParser:
                 data_temp.append(row)
 
         for row in data_temp[1:]:
+            
+            # Skip row if it's empty
+            if len(row) == 0:
+                continue
+            
             data_row = {}
             for heading in data_temp[0]:
                 data_row[heading] = row[data_temp[0].index(heading)]
