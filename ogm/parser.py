@@ -115,7 +115,7 @@ class TextParser:
             from tika import parser
 
             raw = parser.from_file(filepath)
-            if append:
+            if pdf_append:
                 self.data.append({"text": raw["content"]})
             else:
                 self.data = [{"text": raw["content"]}]
