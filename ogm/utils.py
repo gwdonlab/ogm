@@ -29,18 +29,7 @@ def text_data_preprocess(setup_dict, output=True):
     else:
         file_encoding = "iso8859"
 
-    if data_file.endswith(".tsv"):
-        parser.parse_csv(data_file, delimiter="\t", encoding=file_encoding)
-    elif data_file.endswith(".csv"):
-        parser.parse_csv(data_file, encoding=file_encoding)
-    elif data_file.endswith(".xlsx"):
-        parser.parse_excel(data_file)
-    elif data_file.endswith(".rds"):
-        parser.parse_rds(data_file)
-    elif data_file.endswith(".pkl"):
-        parser.import_self(data_file)
-    else:
-        raise IOError("Unsupported file type")
+    parser.parse_file(data_file, encoding=file_encoding)
 
     # Optional time frame attribute
     if "time_filter" in setup_dict:
