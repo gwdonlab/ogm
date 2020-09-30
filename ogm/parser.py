@@ -25,33 +25,118 @@ class TextParser:
         self.earliest_data = None
         self.has_datetime = None
 
+    def parse_file(self, filepath, sheet=0, encoding="utf8", pdf_append=True):
+        """
+        Parse supported file types.
+        If parsing an Excel file, optionally specify a `sheet` to be read from the workbook.
+        If parsing a delimited file (.tsv, .csv), optionally specify an `encoding`.
+        R must be installed to parse .rds files.
+        If `pdf_append` is False, `self.data` will be overwritten by incoming PDF.
+        """
+
+        if filepath.endswith(".tsv"):
+            data_dicts = []
+            data_temp = []
+
+            with open(filepath, "r", encoding=encoding) as csvin:
+                csvin = csv.reader(csvin, delimiter="\t")
+
+                for row in csvin:
+                    data_temp.append(row)
+
+            for row in data_temp[1:]:
+
+                # Skip row if it's empty
+                if len(row) == 0:
+                    continue
+
+                data_row = {}
+                for heading in data_temp[0]:
+                    data_row[heading] = row[data_temp[0].index(heading)]
+
+                data_dicts.append(data_row)
+
+            self.data = data_dicts
+
+        elif filepath.endswith(".csv"):
+            data_dicts = []
+            data_temp = []
+
+            with open(filepath, "r", encoding=encoding) as csvin:
+                csvin = csv.reader(csvin, delimiter=",")
+
+                for row in csvin:
+                    data_temp.append(row)
+
+            for row in data_temp[1:]:
+
+                # Skip row if it's empty
+                if len(row) == 0:
+                    continue
+
+                data_row = {}
+                for heading in data_temp[0]:
+                    data_row[heading] = row[data_temp[0].index(heading)]
+
+                data_dicts.append(data_row)
+
+            self.data = data_dicts
+
+        elif filepath.endswith(".xlsx"):
+            import xlrd
+
+            data_dicts = []
+
+            open_sheet = xlrd.open_workbook(filepath).sheet_by_index(sheet)
+            for row in range(1, open_sheet.nrows):
+                data_row = {}
+                for heading in open_sheet.row_values(0):
+                    data_row[heading] = open_sheet.row_values(row)[
+                        open_sheet.row_values(0).index(heading)
+                    ]
+
+                data_dicts.append(data_row)
+
+            self.data = data_dicts
+
+        elif filepath.endswith(".rds"):
+            import rpy2.robjects as robjects
+            from rpy2.robjects import pandas2ri
+
+            pandas2ri.activate()
+            read_rds = robjects.r["readRDS"]
+            dataframe_temp = read_rds(filepath)
+            self.data = dataframe_temp.to_dict("records")
+
+        elif filepath.endswith(".pkl"):
+            self.import_self(filepath)
+
+        elif filepath.endswith(".pdf"):
+            from tika import parser
+
+            raw = parser.from_file(filepath)
+            if pdf_append:
+                self.data.append({"text": raw["content"]})
+            else:
+                self.data = [{"text": raw["content"]}]
+
+        else:
+            raise IOError("Unsupported file type")
+
     def parse_excel(self, filepath, sheet=0):
         """
         Parse the Sheet `sheet` (0-indexed) in the Excel file at
         `filepath` into an internal dict list
         """
-        import xlrd
-
-        data_dicts = []
-
-        open_sheet = xlrd.open_workbook(filepath).sheet_by_index(sheet)
-        for row in range(1, open_sheet.nrows):
-            data_row = {}
-            for heading in open_sheet.row_values(0):
-                data_row[heading] = open_sheet.row_values(row)[
-                    open_sheet.row_values(0).index(heading)
-                ]
-
-            data_dicts.append(data_row)
-
-        self.data = data_dicts
+        print("DEPRECATION WARNING: parse_excel")
+        self.parse_file(filepath, sheet=sheet)
 
     def parse_tsv(self, filepath, encoding="iso8859"):
         """
         Calls `parse_csv` with delimiter "\\t"
         """
         print("DEPRECATION WARNING: parse_tsv")
-        self.parse_csv(filepath, encoding=encoding, delimiter="\t")
+        self.parse_file(filepath, encoding=encoding)
 
     def parse_csv(self, filepath, encoding="iso8859", delimiter=","):
         """
@@ -59,28 +144,8 @@ class TextParser:
         Optionally, specify the document's encoding.
         Will assume ISO-8859 encoding by default
         """
-        data_dicts = []
-        data_temp = []
-
-        with open(filepath, "r", encoding=encoding) as csvin:
-            csvin = csv.reader(csvin, delimiter=delimiter)
-
-            for row in csvin:
-                data_temp.append(row)
-
-        for row in data_temp[1:]:
-            
-            # Skip row if it's empty
-            if len(row) == 0:
-                continue
-            
-            data_row = {}
-            for heading in data_temp[0]:
-                data_row[heading] = row[data_temp[0].index(heading)]
-
-            data_dicts.append(data_row)
-
-        self.data = data_dicts
+        print("DEPRECATION WARNING: parse_csv")
+        self.parse_file(filepath, encoding)
 
     def parse_pdf(self, filepath, append=True):
         """
@@ -88,26 +153,16 @@ class TextParser:
         If `append` is False, will overwrite `self.data`.
         Uses the tika package
         """
-        from tika import parser
-
-        raw = parser.from_file(filepath)
-        if append:
-            self.data.append({"text": raw["content"]})
-        else:
-            self.data = [{"text": raw["content"]}]
+        print("DEPRECATION WARNING: parse_pdf")
+        self.parse_file(filepath, pdf_append=append)
 
     def parse_rds(self, filepath):
         """
         Read RDS file at `filepath` into `self.data`.
         Uses the rpy2 package, so R must be installed to use this
         """
-        import rpy2.robjects as robjects
-        from rpy2.robjects import pandas2ri
-
-        pandas2ri.activate()
-        read_rds = robjects.r["readRDS"]
-        dataframe_temp = read_rds(filepath)
-        self.data = dataframe_temp.to_dict("records")
+        print("DEPRECATION WARNING: parse_rds")
+        self.parse_file(filepath)
 
     def export_self(self, outpath="./output.pkl"):
         """
