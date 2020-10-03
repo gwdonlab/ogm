@@ -1,7 +1,8 @@
 """
 Parser class
 """
-# pylint: disable=bad-continuation, too-many-arguments, too-many-locals, too-many-branches, too-many-public-methods
+# pylint: disable=bad-continuation, too-many-arguments, too-many-locals
+# pylint: disable=too-many-branches, too-many-statements, too-many-nested-blocks
 import pickle
 import csv
 import datetime
@@ -138,54 +139,6 @@ class TextParser:
 
         else:
             raise IOError("Unsupported file type")
-
-    def parse_excel(self, filepath, sheet=0):
-        """
-        Parse the Sheet `sheet` (0-indexed) in the Excel file at
-        `filepath` into an internal dict list
-        """
-        print("DEPRECATION WARNING: parse_excel")
-        self.parse_file(filepath, sheet=sheet)
-
-    def parse_tsv(self, filepath, encoding="iso8859"):
-        """
-        Calls `parse_csv` with delimiter "\\t"
-        """
-        print("DEPRECATION WARNING: parse_tsv")
-        self.parse_file(filepath, encoding=encoding)
-
-    def parse_csv(self, filepath, encoding="iso8859", delimiter=","):
-        """
-        Parse the csv-like file at `filepath` into an internal dict list.
-        Optionally, specify the document's encoding.
-        Will assume ISO-8859 encoding by default
-        """
-        print("DEPRECATION WARNING: parse_csv")
-        self.parse_file(filepath, encoding)
-
-    def parse_pdf(self, filepath, append=True):
-        """
-        Read the text in the PDF at `filepath` into `self.data`.
-        If `append` is False, will overwrite `self.data`.
-        Uses the tika package
-        """
-        print("DEPRECATION WARNING: parse_pdf")
-        self.parse_file(filepath, pdf_append=append)
-
-    def parse_rds(self, filepath):
-        """
-        Read RDS file at `filepath` into `self.data`.
-        Uses the rpy2 package, so R must be installed to use this
-        """
-        print("DEPRECATION WARNING: parse_rds")
-        self.parse_file(filepath)
-
-    def export_self(self, outpath="./output.pkl"):
-        """
-        Dumps all instance variables into a pickle file
-        """
-        with open(outpath, "wb") as pickle_out:
-            pickle.dump(self.__dict__, pickle_out)
 
     def import_self(self, inpath="./output.pkl"):
         """
