@@ -25,6 +25,24 @@ class TextParser:
         self.corpus = None
         self.earliest_data = None
         self.has_datetime = None
+        self._index = -1
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        self._index += 1
+        if self._index >= len(self.data):
+            self._index = -1
+            raise StopIteration
+        else:
+            return self.data[self._index]
+
+    def __reversed__(self):
+        return self.data[::-1]
+
+    def __getitem__(self, ind):
+        return self.data[ind]
 
     def parse_file(self, filepath, sheet=0, encoding="utf8", pdf_append=True):
         """
