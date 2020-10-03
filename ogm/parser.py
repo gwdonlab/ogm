@@ -83,19 +83,35 @@ class TextParser:
             self.data = data_dicts
 
         elif filepath.endswith(".xlsx"):
-            import xlrd
+            import openpyxl
 
             data_dicts = []
+            header_list = []
 
-            open_sheet = xlrd.open_workbook(filepath).sheet_by_index(sheet)
-            for row in range(1, open_sheet.nrows):
-                data_row = {}
-                for heading in open_sheet.row_values(0):
-                    data_row[heading] = open_sheet.row_values(row)[
-                        open_sheet.row_values(0).index(heading)
-                    ]
+            open_wb = openpyxl.load_workbook(filepath, data_only=True, read_only=True,)
+            sheet_name = open_wb.sheetnames[sheet]
+            open_sheet = open_wb[sheet_name]
 
-                data_dicts.append(data_row)
+            for row_id, row in enumerate(open_sheet.rows):
+                new_entry = {}
+                for col_id, cell in enumerate(row):
+                    value = cell.value
+
+                    try:
+                        if row_id == 0:
+                            if value is None:
+                                break
+                            header_list.append(value)
+                        else:
+                            if value is None:
+                                new_entry[header_list[col_id]] = ""
+                            else:
+                                new_entry[header_list[col_id]] = value
+                    except IndexError:
+                        break
+
+                if row_id > 0:
+                    data_dicts.append(new_entry)
 
             self.data = data_dicts
 
