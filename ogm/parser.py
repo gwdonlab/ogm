@@ -41,6 +41,9 @@ class TextParser:
     def __reversed__(self):
         return self.data[::-1]
 
+    def __getitem__(self, ind):
+        return self.data[ind]
+
     def parse_file(self, filepath, sheet=0, encoding="utf8", pdf_append=True):
         """
         Parse supported file types.
