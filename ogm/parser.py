@@ -44,6 +44,9 @@ class TextParser:
         return self.data[::-1]
 
     def __getitem__(self, ind):
+        """
+        If subscripting with an int, it will be treated as a list index in `self.data`.
+        """
         if isinstance(ind, int):
             return self.data[ind]
         elif type(ind) is type(self._hashkey) and not self._hashing is None:
@@ -177,7 +180,10 @@ class TextParser:
             raise IOError("Unsupported file type")
 
         if id_key is not None:
-            self._hashing = {x[id_key]: i for i, x in enumerate(self.data)}
+            if isinstance(self.data[0][id_key], int):
+                self._hashing = {float(x[id_key]): i for i, x in enumerate(self.data)}
+            else:
+                self._hashing = {x[id_key]: i for i, x in enumerate(self.data)}
             self._hashkey = id_key
 
     def import_self(self, inpath="./output.pkl"):
