@@ -26,6 +26,9 @@ class TextParser:
         self.earliest_data = None
         self.has_datetime = None
         self._index = -1
+        self._hashing = None
+        self._hashkey = None
+        self._keytype = None
 
     def __iter__(self):
         return self
@@ -42,9 +45,32 @@ class TextParser:
         return self.data[::-1]
 
     def __getitem__(self, ind):
-        return self.data[ind]
+        """
+        If subscripting with an int, it will be treated as a list index in `self.data`.
+        """
+        if isinstance(ind, int):
+            return self.data[ind]
+        elif type(ind) is self._keytype and not self._hashing is None:
+            return self.data[self._hashing[ind]]
+        else:
+            raise KeyError("Unknown TextParser subscript received: " + str(ind))
 
-    def parse_file(self, filepath, sheet=0, encoding="utf8", pdf_append=True):
+    def set_data_id(self, id_key):
+        """
+        It is unsafe to make the `id_key` an int, since it will be indistinguishable from a list index.
+        Setter will automatically make `id_key` a float if it's an int.
+        """
+        if isinstance(self.data[0][id_key], int):
+            self._hashing = {float(x[id_key]): i for i, x in enumerate(self.data)}
+            self._keytype = float
+        else:
+            self._hashing = {x[id_key]: i for i, x in enumerate(self.data)}
+            self._keytype = type(self.data[0][id_key])
+        self._hashkey = id_key
+
+    def parse_file(
+        self, filepath, sheet=0, encoding="utf8", pdf_append=True, id_key=None
+    ):
         """
         Parse supported file types.
         If parsing an Excel file, optionally specify a `sheet` to be read from the workbook.
@@ -157,6 +183,15 @@ class TextParser:
 
         else:
             raise IOError("Unsupported file type")
+
+        if id_key is not None:
+            if isinstance(self.data[0][id_key], int):
+                self._hashing = {float(x[id_key]): i for i, x in enumerate(self.data)}
+                self._keytype = float
+            else:
+                self._hashing = {x[id_key]: i for i, x in enumerate(self.data)}
+                self._keytype = type(self.data[0][id_key])
+            self._hashkey = id_key
 
     def import_self(self, inpath="./output.pkl"):
         """
