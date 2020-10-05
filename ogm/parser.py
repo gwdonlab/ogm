@@ -28,6 +28,7 @@ class TextParser:
         self._index = -1
         self._hashing = None
         self._hashkey = None
+        self._keytype = None
 
     def __iter__(self):
         return self
@@ -49,10 +50,10 @@ class TextParser:
         """
         if isinstance(ind, int):
             return self.data[ind]
-        elif type(ind) is type(self._hashkey) and not self._hashing is None:
-            return self._hashing[ind]
+        elif type(ind) is self._keytype and not self._hashing is None:
+            return self.data[self._hashing[ind]]
         else:
-            raise KeyError("Unknown TextParser subscript received:", ind)
+            raise KeyError("Unknown TextParser subscript received: " + str(ind))
 
     def set_data_id(self, new_key):
         """
@@ -182,8 +183,10 @@ class TextParser:
         if id_key is not None:
             if isinstance(self.data[0][id_key], int):
                 self._hashing = {float(x[id_key]): i for i, x in enumerate(self.data)}
+                self._keytype = float
             else:
                 self._hashing = {x[id_key]: i for i, x in enumerate(self.data)}
+                self._keytype = type(self.data[0][id_key])
             self._hashkey = id_key
 
     def import_self(self, inpath="./output.pkl"):
