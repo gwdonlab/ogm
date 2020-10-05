@@ -55,14 +55,18 @@ class TextParser:
         else:
             raise KeyError("Unknown TextParser subscript received: " + str(ind))
 
-    def set_data_id(self, new_key):
+    def set_data_id(self, id_key):
         """
-        It is unsafe to make the `new_key` an int, since it will be indistinguishable from a list index.
+        It is unsafe to make the `id_key` an int, since it will be indistinguishable from a list index.
+        Setter will automatically make `id_key` a float if it's an int.
         """
-        if isinstance(new_key, int):
-            raise TypeError("Hash keys should not be ints")
-
-        self._hashkey = new_key
+        if isinstance(self.data[0][id_key], int):
+            self._hashing = {float(x[id_key]): i for i, x in enumerate(self.data)}
+            self._keytype = float
+        else:
+            self._hashing = {x[id_key]: i for i, x in enumerate(self.data)}
+            self._keytype = type(self.data[0][id_key])
+        self._hashkey = id_key
 
     def parse_file(
         self, filepath, sheet=0, encoding="utf8", pdf_append=True, id_key=None
