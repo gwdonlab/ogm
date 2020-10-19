@@ -1,7 +1,8 @@
 """
 Parser class
 """
-# pylint: disable=bad-continuation, too-many-arguments, too-many-locals, too-many-branches, too-many-public-methods
+# pylint: disable=bad-continuation, too-many-arguments, too-many-locals
+# pylint: disable=too-many-branches, too-many-statements, too-many-nested-blocks
 import pickle
 import csv
 import datetime
@@ -24,8 +25,52 @@ class TextParser:
         self.corpus = None
         self.earliest_data = None
         self.has_datetime = None
+        self._index = -1
+        self._hashing = None
+        self._hashkey = None
+        self._keytype = None
 
-    def parse_file(self, filepath, sheet=0, encoding="utf8", pdf_append=True):
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        self._index += 1
+        if self._index >= len(self.data):
+            self._index = -1
+            raise StopIteration
+        else:
+            return self.data[self._index]
+
+    def __reversed__(self):
+        return self.data[::-1]
+
+    def __getitem__(self, ind):
+        """
+        If subscripting with an int, it will be treated as a list index in `self.data`.
+        """
+        if isinstance(ind, int):
+            return self.data[ind]
+        elif type(ind) is self._keytype and not self._hashing is None:
+            return self.data[self._hashing[ind]]
+        else:
+            raise KeyError("Unknown TextParser subscript received: " + str(ind))
+
+    def set_data_id(self, id_key):
+        """
+        It is unsafe to make the `id_key` an int, since it will be indistinguishable from a list index.
+        Setter will automatically make `id_key` a float if it's an int.
+        """
+        if isinstance(self.data[0][id_key], int):
+            self._hashing = {float(x[id_key]): i for i, x in enumerate(self.data)}
+            self._keytype = float
+        else:
+            self._hashing = {x[id_key]: i for i, x in enumerate(self.data)}
+            self._keytype = type(self.data[0][id_key])
+        self._hashkey = id_key
+
+    def parse_file(
+        self, filepath, sheet=0, encoding="utf8", pdf_append=True, id_key=None
+    ):
         """
         Parse supported file types.
         If parsing an Excel file, optionally specify a `sheet` to be read from the workbook.
@@ -83,19 +128,35 @@ class TextParser:
             self.data = data_dicts
 
         elif filepath.endswith(".xlsx"):
-            import xlrd
+            import openpyxl
 
             data_dicts = []
+            header_list = []
 
-            open_sheet = xlrd.open_workbook(filepath).sheet_by_index(sheet)
-            for row in range(1, open_sheet.nrows):
-                data_row = {}
-                for heading in open_sheet.row_values(0):
-                    data_row[heading] = open_sheet.row_values(row)[
-                        open_sheet.row_values(0).index(heading)
-                    ]
+            open_wb = openpyxl.load_workbook(filepath, data_only=True, read_only=True,)
+            sheet_name = open_wb.sheetnames[sheet]
+            open_sheet = open_wb[sheet_name]
 
-                data_dicts.append(data_row)
+            for row_id, row in enumerate(open_sheet.rows):
+                new_entry = {}
+                for col_id, cell in enumerate(row):
+                    value = cell.value
+
+                    try:
+                        if row_id == 0:
+                            if value is None:
+                                break
+                            header_list.append(value)
+                        else:
+                            if value is None:
+                                new_entry[header_list[col_id]] = ""
+                            else:
+                                new_entry[header_list[col_id]] = value
+                    except IndexError:
+                        break
+
+                if row_id > 0:
+                    data_dicts.append(new_entry)
 
             self.data = data_dicts
 
@@ -123,53 +184,14 @@ class TextParser:
         else:
             raise IOError("Unsupported file type")
 
-    def parse_excel(self, filepath, sheet=0):
-        """
-        Parse the Sheet `sheet` (0-indexed) in the Excel file at
-        `filepath` into an internal dict list
-        """
-        print("DEPRECATION WARNING: parse_excel")
-        self.parse_file(filepath, sheet=sheet)
-
-    def parse_tsv(self, filepath, encoding="iso8859"):
-        """
-        Calls `parse_csv` with delimiter "\\t"
-        """
-        print("DEPRECATION WARNING: parse_tsv")
-        self.parse_file(filepath, encoding=encoding)
-
-    def parse_csv(self, filepath, encoding="iso8859", delimiter=","):
-        """
-        Parse the csv-like file at `filepath` into an internal dict list.
-        Optionally, specify the document's encoding.
-        Will assume ISO-8859 encoding by default
-        """
-        print("DEPRECATION WARNING: parse_csv")
-        self.parse_file(filepath, encoding)
-
-    def parse_pdf(self, filepath, append=True):
-        """
-        Read the text in the PDF at `filepath` into `self.data`.
-        If `append` is False, will overwrite `self.data`.
-        Uses the tika package
-        """
-        print("DEPRECATION WARNING: parse_pdf")
-        self.parse_file(filepath, pdf_append=append)
-
-    def parse_rds(self, filepath):
-        """
-        Read RDS file at `filepath` into `self.data`.
-        Uses the rpy2 package, so R must be installed to use this
-        """
-        print("DEPRECATION WARNING: parse_rds")
-        self.parse_file(filepath)
-
-    def export_self(self, outpath="./output.pkl"):
-        """
-        Dumps all instance variables into a pickle file
-        """
-        with open(outpath, "wb") as pickle_out:
-            pickle.dump(self.__dict__, pickle_out)
+        if id_key is not None:
+            if isinstance(self.data[0][id_key], int):
+                self._hashing = {float(x[id_key]): i for i, x in enumerate(self.data)}
+                self._keytype = float
+            else:
+                self._hashing = {x[id_key]: i for i, x in enumerate(self.data)}
+                self._keytype = type(self.data[0][id_key])
+            self._hashkey = id_key
 
     def import_self(self, inpath="./output.pkl"):
         """
