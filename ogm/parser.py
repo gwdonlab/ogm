@@ -193,6 +193,13 @@ class TextParser:
                 self._keytype = type(self.data[0][id_key])
             self._hashkey = id_key
 
+    def export_self(self, outpath="./output.pkl"):
+        """
+        Dumps all instance variables into a pickle file
+        """
+        with open(outpath, "wb") as pickle_out:
+            pickle.dump(self.__dict__, pickle_out)
+
     def import_self(self, inpath="./output.pkl"):
         """
         Loads instance attributes from a pickle file; will prioritize
