@@ -105,6 +105,8 @@ def from_excel_ordinal(ordinal):
 
 
 def remove_emoji(input_text):
+    import re
+
     # Taken from this Gist:
     # https://gist.github.com/slowkow/7a7f61f495e3dbb7e3d767f97bd7304b#gistcomment-3315605
 
@@ -136,5 +138,7 @@ def remove_emoji(input_text):
 
 
 def remove_URL(input_text):
+    import re
+
     url = re.compile(r"https?://\S+|www\.\S+")
     return url.sub(r" ", input_text)
