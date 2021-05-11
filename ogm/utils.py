@@ -49,37 +49,8 @@ def text_data_preprocess(setup_dict, output=True):
             )
 
     if "remove_emoji" in setup_dict:
-        # Taken from this Gist:
-        # https://gist.github.com/slowkow/7a7f61f495e3dbb7e3d767f97bd7304b#gistcomment-3315605
-
-        emoji_pattern = re.compile(
-            "["
-            u"\U0001F600-\U0001F64F"  # emoticons
-            u"\U0001F300-\U0001F5FF"  # symbols & pictographs
-            u"\U0001F680-\U0001F6FF"  # transport & map symbols
-            u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
-            u"\U00002500-\U00002BEF"  # chinese char
-            u"\U00002702-\U000027B0"
-            u"\U00002702-\U000027B0"
-            u"\U000024C2-\U0001F251"
-            u"\U0001f926-\U0001f937"
-            u"\U00010000-\U0010ffff"
-            u"\u2640-\u2642"
-            u"\u2600-\u2B55"
-            u"\u200d"
-            u"\u23cf"
-            u"\u23e9"
-            u"\u231a"
-            u"\ufe0f"  # dingbats
-            u"\u3030"
-            "]+",
-            flags=re.UNICODE,
-        )
-
         for item in parser.data:
-            item[setup_dict["text_key"]] = emoji_pattern.sub(
-                r" ", item[setup_dict["text_key"]]
-            )
+            item[setup_dict["text_key"]] = remove_emoji(item[setup_dict["text_key"]])
 
     if "replace_before_stemming" in setup_dict:
         parser.replace_words(
@@ -131,3 +102,39 @@ def from_excel_ordinal(ordinal):
         ordinal -= 1  # Excel leap year bug, 1900 is not a leap year!
 
     return (_epoch0 + timedelta(days=ordinal)).replace(microsecond=0)
+
+
+def remove_emoji(input_text):
+    # Taken from this Gist:
+    # https://gist.github.com/slowkow/7a7f61f495e3dbb7e3d767f97bd7304b#gistcomment-3315605
+
+    emoji_pattern = re.compile(
+        "["
+        u"\U0001F600-\U0001F64F"  # emoticons
+        u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+        u"\U0001F680-\U0001F6FF"  # transport & map symbols
+        u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
+        u"\U00002500-\U00002BEF"  # chinese char
+        u"\U00002702-\U000027B0"
+        u"\U00002702-\U000027B0"
+        u"\U000024C2-\U0001F251"
+        u"\U0001f926-\U0001f937"
+        u"\U00010000-\U0010ffff"
+        u"\u2640-\u2642"
+        u"\u2600-\u2B55"
+        u"\u200d"
+        u"\u23cf"
+        u"\u23e9"
+        u"\u231a"
+        u"\ufe0f"  # dingbats
+        u"\u3030"
+        "]+",
+        flags=re.UNICODE,
+    )
+
+    return emoji_pattern.sub(r" ", input_text)
+
+
+def remove_URL(input_text):
+    url = re.compile(r"https?://\S+|www\.\S+")
+    return url.sub(r" ", input_text)
