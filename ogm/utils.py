@@ -27,7 +27,7 @@ def text_data_preprocess(setup_dict, output=True):
     if "encoding" in setup_dict:
         file_encoding = setup_dict["encoding"]
     else:
-        file_encoding = "iso8859"
+        file_encoding = "utf8"
 
     parser.parse_file(data_file, encoding=file_encoding)
 
