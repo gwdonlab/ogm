@@ -15,7 +15,7 @@ def text_data_preprocess(setup_dict, output=True):
     import re
 
     # Absolute path to data file
-    data_file = setup_dict["input_path"]
+    data_file = setup_dict["data_path"]
 
     # Optional language attribute in setup
     if "lang" in setup_dict:
