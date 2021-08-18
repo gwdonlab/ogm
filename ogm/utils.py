@@ -15,7 +15,7 @@ def text_data_preprocess(setup_dict, output=True):
     import re
 
     # Absolute path to data file
-    data_file = setup_dict["input_path"]
+    data_file = setup_dict["data_path"]
 
     # Optional language attribute in setup
     if "lang" in setup_dict:
@@ -27,7 +27,7 @@ def text_data_preprocess(setup_dict, output=True):
     if "encoding" in setup_dict:
         file_encoding = setup_dict["encoding"]
     else:
-        file_encoding = "iso8859"
+        file_encoding = "utf8"
 
     parser.parse_file(data_file, encoding=file_encoding)
 

@@ -1,0 +1,9 @@
+{
+    "data_path": "literature.xlsx",
+    "output_path": "processed_literature.csv",
+    "text_key": "text",
+    "remove_before_stemming": [
+        "grandmother",
+        "grandfather"
+    ]
+}

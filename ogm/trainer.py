@@ -100,7 +100,7 @@ class TextTrainer(TextParser):
         self.model = lda_model
         self.model_type = "lda"
 
-    def predict(self, input_data):
+    def predict(self, input_data, already_stemmed=False):
         """
         Use an internal LDA model to make a prediction about the topic distribution
         in the `input_data` document, which is just a string
@@ -115,17 +115,21 @@ class TextTrainer(TextParser):
         from gensim.parsing.preprocessing import STOPWORDS
         from gensim.utils import simple_preprocess
 
-        result = []
-        stemmer = SnowballStemmer(self.lang)
-        # Run simple_preprocess and generate a list of tokens from this document
-        for token in simple_preprocess(input_data):
+        if not already_stemmed:
+            result = []
+            stemmer = SnowballStemmer(self.lang)
+            # Run simple_preprocess and generate a list of tokens from this document
+            for token in simple_preprocess(input_data):
 
-            # Ignore stopwords and short words, stem/lemmatize the rest
-            if token not in STOPWORDS and len(token) > 3:
-                lemm_stem = stemmer.stem(WordNetLemmatizer().lemmatize(token, pos="v"))
+                # Ignore stopwords and short words, stem/lemmatize the rest
+                if token not in STOPWORDS and len(token) > 3:
+                    lemm_stem = stemmer.stem(WordNetLemmatizer().lemmatize(token, pos="v"))
 
-                # Append this result to list of words
-                result.append(lemm_stem)
+                    # Append this result to list of words
+                    result.append(lemm_stem)
+
+        else:
+            result = input_data
 
         # Use list of words to predict topics
         doc_vector = self.model.id2word.doc2bow(result)
@@ -174,23 +178,3 @@ class TextTrainer(TextParser):
         lda_model.save(output_path)
         self.model = lda_model
         self.model_type = "ldaseq"
-
-    def predict_internal(self, key, key_to_add):
-        '''
-        Uses the self.model to predict categories for the all the self.data with header `key`.
-        Will add these category predictions to the header `key_to_add`.
-        '''
-        import tqdm
-
-        if self.model is None:
-            raise ValueError("No trained model in this TextTrainer")
-
-        if self.model_type != "ldaseq":
-            raise ValueError("Model type is " + self.model_type)
-
-        if not self.stemmed:
-            self.lemmatize_stem_words(key)
-
-        for item in tqdm.tqdm(self.data):
-            doc_vector = self.model.id2word.doc2bow(item[key])
-            item[key_to_add] = self.model[doc_vector]
