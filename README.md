@@ -16,7 +16,7 @@ python setup.py install
 
 ## Text Preprocessing Utility
 
-Here is an example of a JSON-structure which could be used for the `text_data_preprocess` function in `ogm.utils`. Only `text_key` is always required, and `output_path` is required if `output` is true.
+Here is an example of a JSON-structure which could be used for the `text_data_preprocess` function in `ogm.utils`. Only `text_key` and `data_path` are always required, and `output_path` is required if `output` is true.
 
 ```json
 {
@@ -64,3 +64,5 @@ Here is an example of a JSON-structure which could be used for the `text_data_pr
     "output_path": "path to output file"
 }
 ```
+
+To try it out, run [`examples/text_test.py`](examples/text_test.py). It loads a config file that directs the preprocessor to remove the words "grandmother" and "grandfather" from six opening lines of notable works of literature. 
