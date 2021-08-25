@@ -317,12 +317,10 @@ class TextParser:
         all words to first-person, present tense when possible.
         Ignores unknown words or words unable to be altered.
         """
-        try:
-            from nltk.stem import WordNetLemmatizer, SnowballStemmer
-            from gensim.parsing.preprocessing import STOPWORDS
-            from gensim.utils import simple_preprocess
-        except:
-            raise ImportError("This method requires the gensim and nltk packages.")
+        from nltk.stem import WordNetLemmatizer, SnowballStemmer
+        from gensim.parsing.preprocessing import STOPWORDS
+        from gensim.utils import simple_preprocess
+        import contractions
 
         if not self.data:
             raise ValueError("Please parse a text file first!")
@@ -346,6 +344,12 @@ class TextParser:
                 # This key is the one to be operated on
                 if dict_key == key:
                     result = []
+
+                    # Handle English contractions
+                    if self.lang == "english":
+                        no_contractions = contractions.fix(data_dict[key])
+                    else:
+                        no_contractions = data_dict[key]
 
                     # Run simple_preprocess and generate a list of tokens from this document
                     for token in simple_preprocess(data_dict[key], min_len=3):
