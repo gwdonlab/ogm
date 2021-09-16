@@ -12,7 +12,6 @@ def text_data_preprocess(setup_dict, output=True):
     Set `output` to write processed data into a file, otherwise this will return the parser's data.
     """
     from ogm.parser import TextParser
-    import re
 
     # Absolute path to data file
     data_file = setup_dict["data_path"]
@@ -256,3 +255,60 @@ def sechidis_stratify(data, classes, ratios, one_hot=False):
     # And the stratified labels dataset
     return stratified_data_ids, stratified_data
 
+def lemmatize_string(words, not_tokenized=True, do_not_tokenize=False, pos="v"):
+    '''
+    `words` should be a string or a list of strings; set `not_tokenized` to False if this is a list of strings.
+    If `not_tokenized` is True, the string `words` will be split into tokens by spaces.
+    Set `do_not_tokenize` if `words` is not tokenized but shouldn't be split (useful if `words` is a single word).
+
+    `pos` is a part-of-speech code accepted by nltk.
+
+    Returns a list of lemmatized words.
+    '''
+    from nltk.stem import WordNetLemmatizer
+
+    if not_tokenized:
+        to_lemm = words.split()
+    else:
+        to_lemm = words
+
+    lemmatizer = WordNetLemmatizer()
+
+    if do_not_tokenize:
+        return [lemmatizer.lemmatize(words, pos=pos)]
+    else:
+        return [lemmatizer.lemmatize(token, pos=pos) for token in to_lemm]
+
+def stem_string(words, not_tokenized=True, do_not_tokenize=False, language="english"):
+    '''
+    `words` should be a string or a list of strings; set `not_tokenized` to False if this is a list of strings.
+    If `not_tokenized` is True, the string `words` will be split into tokens by spaces.
+    Set `do_not_tokenize` if `words` is not tokenized but shouldn't be split (useful if `words` is a single word).
+
+    `language` is a language accepted by nltk.
+
+    Returns a list of stemmed words.
+    '''
+    from nltk.stem import SnowballStemmer
+    
+    if not_tokenized:
+        to_stem = words.split()
+    else:
+        to_stem = words
+
+    stemmer = SnowballStemmer(language=language)
+    
+    if do_not_tokenize:
+        return [stemmer.stem(words)]
+    else:
+        return [stemmer.stem(token) for token in to_stem]
+
+def fix_contractions(words):
+    '''
+    `words` should be a string. Only English text is accepted.
+
+    Returns a list of un-contracted words.
+    '''
+    import contractions
+
+    return contractions.fix(words)

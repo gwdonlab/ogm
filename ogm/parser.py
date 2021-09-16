@@ -1,7 +1,7 @@
 """
 Parser class
 """
-# pylint: disable=bad-continuation, too-many-arguments, too-many-locals
+# pylint: disable=too-many-arguments, too-many-locals
 # pylint: disable=too-many-branches, too-many-statements, too-many-nested-blocks
 import pickle
 import csv
@@ -38,8 +38,8 @@ class TextParser:
         if self._index >= len(self.data):
             self._index = -1
             raise StopIteration
-        else:
-            return self.data[self._index]
+        
+        return self.data[self._index]
 
     def __reversed__(self):
         return self.data[::-1]
@@ -308,21 +308,21 @@ class TextParser:
 
         self.data = new_dicts
 
-    def lemmatize_stem_words(self, key):
+    def lemmatize_stem_words(self, key, pos="v"):
         """
         Stem and lemmatize words in `data` at the dict key `key` using
         NLTK's SnowballStemmer and WordNetLemmatizer.
-        Also converts words to lowercase.
+        Also converts words to lowercase and expands contractions.
         Stemming means removing suffixes and lemmatizing means converting
         all words to first-person, present tense when possible.
+        
+        This behavior can be modified by passing an NLTK-accepted POS code.
+
         Ignores unknown words or words unable to be altered.
         """
-        try:
-            from nltk.stem import WordNetLemmatizer, SnowballStemmer
-            from gensim.parsing.preprocessing import STOPWORDS
-            from gensim.utils import simple_preprocess
-        except:
-            raise ImportError("This method requires the gensim and nltk packages.")
+        from gensim.parsing.preprocessing import STOPWORDS
+        from gensim.utils import simple_preprocess
+        from ogm.utils import lemmatize_string, stem_string, fix_contractions
 
         if not self.data:
             raise ValueError("Please parse a text file first!")
@@ -335,9 +335,6 @@ class TextParser:
 
         data_dicts = []
 
-        # Create Stemmer object
-        stemmer = SnowballStemmer(self.lang)
-
         # Iterate through self.data
         for data_dict in self.data:
             new_dict = {}
@@ -347,17 +344,19 @@ class TextParser:
                 if dict_key == key:
                     result = []
 
+                    # Handle English contractions
+                    if self.lang == "english":
+                        no_contractions = fix_contractions(data_dict[key])
+                    else:
+                        no_contractions = data_dict[key]
+
                     # Run simple_preprocess and generate a list of tokens from this document
-                    for token in simple_preprocess(data_dict[key], min_len=3):
+                    for token in simple_preprocess(no_contractions, min_len=3):
 
                         # Ignore stopwords and short words, stem/lemmatize the rest
                         if token not in STOPWORDS:
-                            lemm_stem = stemmer.stem(
-                                WordNetLemmatizer().lemmatize(token, pos="v")
-                            )
-
-                            # Append this result to list of words
-                            result.append(lemm_stem)
+                            lemm_stem = stem_string(lemmatize_string(token, do_not_tokenize=True, pos=pos), not_tokenized=False, language=self.lang)
+                            result.append(lemm_stem[0])
 
                     # Put this list of words back into the data dict
                     new_dict[dict_key] = result
