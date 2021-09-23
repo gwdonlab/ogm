@@ -31,10 +31,17 @@ def text_data_preprocess(setup_dict, output=True):
     parser.parse_file(data_file, encoding=file_encoding)
 
     # Optional time frame attribute
-    if "time_filter" in setup_dict:
+    if "time_filter" in setup_dict and "data_format" in setup_dict["time_filter"]:
         parser.filter_within_time_range(
             setup_dict["time_filter"]["time_key"],
+            setup_dict["time_filter"]["arg_format"],
+            setup_dict["time_filter"]["start"],
+            setup_dict["time_filter"]["end"],
             setup_dict["time_filter"]["data_format"],
+        )
+    elif "time_filter" in setup_dict:
+        parser.filter_within_time_range(
+            setup_dict["time_filter"]["time_key"],
             setup_dict["time_filter"]["arg_format"],
             setup_dict["time_filter"]["start"],
             setup_dict["time_filter"]["end"],
@@ -104,10 +111,11 @@ def from_excel_ordinal(ordinal):
 
 
 def remove_emoji(input_text):
+    """
+    Taken from this Gist:
+    https://gist.github.com/slowkow/7a7f61f495e3dbb7e3d767f97bd7304b#gistcomment-3315605
+    """
     import re
-
-    # Taken from this Gist:
-    # https://gist.github.com/slowkow/7a7f61f495e3dbb7e3d767f97bd7304b#gistcomment-3315605
 
     emoji_pattern = re.compile(
         "["
@@ -255,8 +263,9 @@ def sechidis_stratify(data, classes, ratios, one_hot=False):
     # And the stratified labels dataset
     return stratified_data_ids, stratified_data
 
+
 def lemmatize_string(words, not_tokenized=True, do_not_tokenize=False, pos="v"):
-    '''
+    """
     `words` should be a string or a list of strings; set `not_tokenized` to False if this is a list of strings.
     If `not_tokenized` is True, the string `words` will be split into tokens by spaces.
     Set `do_not_tokenize` if `words` is not tokenized but shouldn't be split (useful if `words` is a single word).
@@ -264,7 +273,7 @@ def lemmatize_string(words, not_tokenized=True, do_not_tokenize=False, pos="v"):
     `pos` is a part-of-speech code accepted by nltk.
 
     Returns a list of lemmatized words.
-    '''
+    """
     from nltk.stem import WordNetLemmatizer
 
     if not_tokenized:
@@ -279,8 +288,9 @@ def lemmatize_string(words, not_tokenized=True, do_not_tokenize=False, pos="v"):
     else:
         return [lemmatizer.lemmatize(token, pos=pos) for token in to_lemm]
 
+
 def stem_string(words, not_tokenized=True, do_not_tokenize=False, language="english"):
-    '''
+    """
     `words` should be a string or a list of strings; set `not_tokenized` to False if this is a list of strings.
     If `not_tokenized` is True, the string `words` will be split into tokens by spaces.
     Set `do_not_tokenize` if `words` is not tokenized but shouldn't be split (useful if `words` is a single word).
@@ -288,27 +298,28 @@ def stem_string(words, not_tokenized=True, do_not_tokenize=False, language="engl
     `language` is a language accepted by nltk.
 
     Returns a list of stemmed words.
-    '''
+    """
     from nltk.stem import SnowballStemmer
-    
+
     if not_tokenized:
         to_stem = words.split()
     else:
         to_stem = words
 
     stemmer = SnowballStemmer(language=language)
-    
+
     if do_not_tokenize:
         return [stemmer.stem(words)]
     else:
         return [stemmer.stem(token) for token in to_stem]
 
+
 def fix_contractions(words):
-    '''
+    """
     `words` should be a string. Only English text is accepted.
 
     Returns a list of un-contracted words.
-    '''
+    """
     import contractions
 
     return contractions.fix(words)
