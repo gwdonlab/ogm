@@ -321,5 +321,9 @@ def fix_contractions(words):
     Returns a list of un-contracted words.
     """
     import contractions
-
-    return contractions.fix(words)
+    
+    try:
+        return contractions.fix(words)
+    except IndexError:
+        # On rare occasions, the contractions library crashes with special characters
+        return words
