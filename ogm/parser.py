@@ -84,28 +84,8 @@ class TextParser:
             with open(filepath, "r", encoding=encoding) as csvin:
                 csvin = csv.reader(csvin, delimiter="\t")
 
-                try:
-                    for row in csvin:
-                        data_temp.append(row)
-                except Exception:
-                    # Handle large field errors
-                    import sys
-
-                    max_int = sys.maxsize
-
-                    while True:
-                        # decrease the value by factor 10
-                        # as long as system OverflowError occurs
-
-                        try:
-                            csv.field_size_limit(max_int)
-                            break
-                        except OverflowError:
-                            max_int = int(max_int / 10)
-
-                    data_temp = []
-                    for row in csvin:
-                        data_temp.append(row)
+                for row in csvin:
+                    data_temp.append(row)
 
             for row in data_temp[1:]:
 
