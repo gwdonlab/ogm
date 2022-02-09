@@ -68,9 +68,7 @@ class TextParser:
             self._keytype = type(self.data[0][id_key])
         self._hashkey = id_key
 
-    def parse_file(
-        self, filepath, sheet=0, encoding="utf8", pdf_append=True, id_key=None
-    ):
+    def parse_file(self, filepath, sheet=0, encoding="utf8", pdf_append=True, id_key=None):
         """
         Parse supported file types.
         If parsing an Excel file, optionally specify a `sheet` to be read from the workbook.
@@ -86,8 +84,28 @@ class TextParser:
             with open(filepath, "r", encoding=encoding) as csvin:
                 csvin = csv.reader(csvin, delimiter="\t")
 
-                for row in csvin:
-                    data_temp.append(row)
+                try:
+                    for row in csvin:
+                        data_temp.append(row)
+                except Exception:
+                    # Handle large field errors
+                    import sys
+
+                    max_int = sys.maxsize
+
+                    while True:
+                        # decrease the value by factor 10
+                        # as long as system OverflowError occurs
+
+                        try:
+                            csv.field_size_limit(max_int)
+                            break
+                        except OverflowError:
+                            max_int = int(max_int / 10)
+
+                    data_temp = []
+                    for row in csvin:
+                        data_temp.append(row)
 
             for row in data_temp[1:]:
 
@@ -480,9 +498,7 @@ class TextParser:
         self.data = temp
         return items_removed
 
-    def add_datetime_attribute(
-        self, key, key_to_add, data_format=None, overwrite=False
-    ):
+    def add_datetime_attribute(self, key, key_to_add, data_format=None, overwrite=False):
         """
         Adds a key to the data list called `key_to_add`. This key will hold a `datetime`
         object which is built from the string at `key` written in the format `data_format`.
@@ -503,9 +519,7 @@ class TextParser:
             raise KeyError("Time key isn't in this dataset")
 
         if key_to_add in self.data[0].keys() and not overwrite:
-            raise KeyError(
-                "Trying to add a pre-existing key. Set 'overwrite' to True to ignore"
-            )
+            raise KeyError("Trying to add a pre-existing key. Set 'overwrite' to True to ignore")
 
         if self.earliest_data is None:
             self.earliest_data = datetime.datetime.now()
@@ -567,9 +581,7 @@ class TextParser:
 
             # Make sure parsers aren't stemmed
             if parser.stemmed or self.stemmed:
-                raise ValueError(
-                    "Merging TextParsers that have already been stemmed is unsafe"
-                )
+                raise ValueError("Merging TextParsers that have already been stemmed is unsafe")
 
             # Make sure parsers have the same headers
             for header in parser.data[0].keys():
@@ -617,9 +629,7 @@ class TextParser:
         import matplotlib.pyplot as plt
 
         if not self.has_datetime:
-            self.add_datetime_attribute(
-                key, "__added_datetime", data_format=data_format
-            )
+            self.add_datetime_attribute(key, "__added_datetime", data_format=data_format)
 
         if start_date is None:
             beginning = self.earliest_data
@@ -657,9 +667,7 @@ class TextParser:
         # left_off_at jumps from timeslice to timeslice,
         # while the secondary start_index iterator loops through posts within current timeslice
         while beginning < end:
-            end_of_timeslice = min(
-                beginning + datetime.timedelta(days=days_interval), end
-            )
+            end_of_timeslice = min(beginning + datetime.timedelta(days=days_interval), end)
             x_axis_labels.append(beginning.strftime("%Y-%m-%d"))
             start_index = left_off_at
             quant_in_timeslice = 0
@@ -698,15 +706,11 @@ class TextParser:
         """
         return [x[key] for x in self.data]
 
-    def write_data(
-        self, filepath, delimiter=",", write_headers=True, encoding="iso8859"
-    ):
+    def write_data(self, filepath, delimiter=",", write_headers=True, encoding="iso8859"):
         """
         Deprecated function
         """
-        print(
-            "WARNING: write_data will be removed in a future version. Use write_csv instead"
-        )
+        print("WARNING: write_data will be removed in a future version. Use write_csv instead")
 
         self.write_csv(
             filepath,
@@ -715,9 +719,7 @@ class TextParser:
             encoding=encoding,
         )
 
-    def write_csv(
-        self, filepath, delimiter=",", write_headers=True, encoding="iso8859"
-    ):
+    def write_csv(self, filepath, delimiter=",", write_headers=True, encoding="iso8859"):
         """
         Write data out to a csv-like file at `filepath`.
         The delimiter (comma by default) can be anything
@@ -726,9 +728,7 @@ class TextParser:
         headers = self.data[0].keys()
 
         with open(filepath, "w", newline="", encoding=encoding) as outfile:
-            filewriter = csv.DictWriter(
-                outfile, delimiter=delimiter, fieldnames=headers
-            )
+            filewriter = csv.DictWriter(outfile, delimiter=delimiter, fieldnames=headers)
 
             if write_headers:
                 filewriter.writeheader()
