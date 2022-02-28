@@ -3,13 +3,14 @@ Package for using machine learning to analyze the behavior of online groups
 
 ## Installation
 
-To install all dependencies, you'll need to run these commands:
+This package is not on PyPI, so either install directly from GitHub with:
 
 ```bash
-pip install -r requirements.txt
+pip install git+https://github.com/gwdonlab/ogm
 ```
 
-Finally, run:
+*OR* clone this repository and run:
+
 ```bash
 python setup.py install
 ```
