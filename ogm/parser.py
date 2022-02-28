@@ -162,12 +162,6 @@ class TextParser:
 
             self.data = data_dicts
 
-        elif filepath.endswith(".rds"):
-            import pyreadr
-
-            dataframe_temp = pyreadr.read_r(filepath)[None]
-            self.data = dataframe_temp.to_dict("records")
-
         elif filepath.endswith(".pkl"):
             self.import_self(filepath)
 
