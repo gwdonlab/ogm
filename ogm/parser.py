@@ -163,12 +163,9 @@ class TextParser:
             self.data = data_dicts
 
         elif filepath.endswith(".rds"):
-            import rpy2.robjects as robjects
-            from rpy2.robjects import pandas2ri
+            import pyreadr
 
-            pandas2ri.activate()
-            read_rds = robjects.r["readRDS"]
-            dataframe_temp = read_rds(filepath)
+            dataframe_temp = pyreadr.read_r(filepath)[None]
             self.data = dataframe_temp.to_dict("records")
 
         elif filepath.endswith(".pkl"):
