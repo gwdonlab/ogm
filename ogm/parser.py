@@ -73,7 +73,6 @@ class TextParser:
         Parse supported file types.
         If parsing an Excel file, optionally specify a `sheet` to be read from the workbook.
         If parsing a delimited file (.tsv, .csv), optionally specify an `encoding`.
-        R must be installed to parse .rds files.
         If `pdf_append` is False, `self.data` will be overwritten by incoming PDF.
         """
 
@@ -131,11 +130,7 @@ class TextParser:
             data_dicts = []
             header_list = []
 
-            open_wb = openpyxl.load_workbook(
-                filepath,
-                data_only=True,
-                read_only=True,
-            )
+            open_wb = openpyxl.load_workbook(filepath, data_only=True, read_only=True)
             sheet_name = open_wb.sheetnames[sheet]
             open_sheet = open_wb[sheet_name]
 
@@ -676,19 +671,6 @@ class TextParser:
         Return a list of the data contained under the header `key`
         """
         return [x[key] for x in self.data]
-
-    def write_data(self, filepath, delimiter=",", write_headers=True, encoding="iso8859"):
-        """
-        Deprecated function
-        """
-        print("WARNING: write_data will be removed in a future version. Use write_csv instead")
-
-        self.write_csv(
-            filepath,
-            delimiter=delimiter,
-            write_headers=write_headers,
-            encoding=encoding,
-        )
 
     def write_csv(self, filepath, delimiter=",", write_headers=True, encoding="iso8859"):
         """
