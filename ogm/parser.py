@@ -210,8 +210,6 @@ class TextParser:
         If the data hasn't been stemmed, this does string-matching.
         If the data has been stemmed, this will search through the list of word stems
         """
-        import re
-        import trrex as tx
 
         if not self.data:
             raise ValueError("Please parse a text file first!")
@@ -221,9 +219,6 @@ class TextParser:
 
         occurrences = 0
         new_dicts = []
-
-        # Create tr-rex regex
-        removal_regex = tx.make(remove_words)
 
         # Loop through data dictionaries
         for data_dict in self.data:
@@ -242,9 +237,12 @@ class TextParser:
                 # If this is true, then this is the data to be cleaned/data is a string
                 elif dict_key == key:
                     curr_string = data_dict[key]
-                    new_string, n_o = re.subn(removal_regex, "", curr_string)
-                    occurrences += n_o
-                    new_dict[dict_key] = new_string
+                    for word in remove_words:
+                        curr_string = curr_string.replace(word, "")
+                        occurrences += int(
+                            (len(data_dict[dict_key]) - len(curr_string)) / len(word)
+                        )
+                    new_dict[dict_key] = curr_string
 
                 # Otherwise, this data should just be copied over
                 else:
@@ -261,8 +259,6 @@ class TextParser:
         For example, set this dict to `{"cat" : "dog"}` to replace all instances
         of "cat" with "dog".
         """
-        import re
-        import trrex as tx
 
         if not self.data:
             raise ValueError("Please parse a text file first!")
@@ -294,8 +290,7 @@ class TextParser:
                 elif dict_key == key:
                     curr_string = data_dict[dict_key]
                     for word in replacement_map:
-                        repl_regex = tx.make([word])
-                        curr_string = re.sub(repl_regex, replacement_map[word], curr_string)
+                        curr_string = curr_string.replace(word, replacement_map[word])
                     new_dict[dict_key] = curr_string
 
                 # Otherwise, this data should just be copied over

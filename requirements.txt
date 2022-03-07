@@ -7,4 +7,3 @@ matplotlib >= 3.4.3
 tqdm >= 4.62.3
 contractions >= 0.0.52
 python-dateutil >= 2.8.2
-trrex >= 0.0.4
