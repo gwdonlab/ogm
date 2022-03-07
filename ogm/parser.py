@@ -38,7 +38,7 @@ class TextParser:
         if self._index >= len(self.data):
             self._index = -1
             raise StopIteration
-        
+
         return self.data[self._index]
 
     def __reversed__(self):
@@ -68,14 +68,11 @@ class TextParser:
             self._keytype = type(self.data[0][id_key])
         self._hashkey = id_key
 
-    def parse_file(
-        self, filepath, sheet=0, encoding="utf8", pdf_append=True, id_key=None
-    ):
+    def parse_file(self, filepath, sheet=0, encoding="utf8", pdf_append=True, id_key=None):
         """
         Parse supported file types.
         If parsing an Excel file, optionally specify a `sheet` to be read from the workbook.
         If parsing a delimited file (.tsv, .csv), optionally specify an `encoding`.
-        R must be installed to parse .rds files.
         If `pdf_append` is False, `self.data` will be overwritten by incoming PDF.
         """
 
@@ -133,7 +130,7 @@ class TextParser:
             data_dicts = []
             header_list = []
 
-            open_wb = openpyxl.load_workbook(filepath, data_only=True, read_only=True,)
+            open_wb = openpyxl.load_workbook(filepath, data_only=True, read_only=True)
             sheet_name = open_wb.sheetnames[sheet]
             open_sheet = open_wb[sheet_name]
 
@@ -159,15 +156,6 @@ class TextParser:
                     data_dicts.append(new_entry)
 
             self.data = data_dicts
-
-        elif filepath.endswith(".rds"):
-            import rpy2.robjects as robjects
-            from rpy2.robjects import pandas2ri
-
-            pandas2ri.activate()
-            read_rds = robjects.r["readRDS"]
-            dataframe_temp = read_rds(filepath)
-            self.data = dataframe_temp.to_dict("records")
 
         elif filepath.endswith(".pkl"):
             self.import_self(filepath)
@@ -315,7 +303,7 @@ class TextParser:
         Also converts words to lowercase and expands contractions.
         Stemming means removing suffixes and lemmatizing means converting
         all words to first-person, present tense when possible.
-        
+
         This behavior can be modified by passing an NLTK-accepted POS code.
 
         Ignores unknown words or words unable to be altered.
@@ -355,7 +343,11 @@ class TextParser:
 
                         # Ignore stopwords and short words, stem/lemmatize the rest
                         if token not in STOPWORDS:
-                            lemm_stem = stem_string(lemmatize_string(token, do_not_tokenize=True, pos=pos), not_tokenized=False, language=self.lang)
+                            lemm_stem = stem_string(
+                                lemmatize_string(token, do_not_tokenize=True, pos=pos),
+                                not_tokenized=False,
+                                language=self.lang,
+                            )
                             result.append(lemm_stem[0])
 
                     # Put this list of words back into the data dict
@@ -413,12 +405,12 @@ class TextParser:
         return items_removed
 
     def filter_within_time_range(
-        self, key, data_format, input_format, start, end, complement=False
+        self, key, input_format, start, end, data_format=None, complement=False
     ):
         """
         Filter dataset so that items with a time attribute are restricted by the time frame from
         `start` to `end`. Will include `start` but exclude `end`.
-        `data_format` specifies how the date appears in the data.
+        `data_format` specifies how the date appears in the data. If `None`, this will be inferred.
         `input_format` specifies how the date appears in the `start` and `end` arguments.
         Operation can be complemented by setting `complement` to True.
         Will return the number of entries removed
@@ -433,33 +425,50 @@ class TextParser:
         date_i = datetime.datetime.strptime(start, input_format)
         temp = []
 
-        if not complement:
-            temp = [
-                x
-                for x in self.data
-                if (
-                    datetime.datetime.strptime(x[key], data_format) >= date_i
-                    and datetime.datetime.strptime(x[key], data_format) < date_f
-                )
-            ]
+        if data_format is not None:
+            if not complement:
+                temp = [
+                    x
+                    for x in self.data
+                    if (
+                        datetime.datetime.strptime(x[key], data_format) >= date_i
+                        and datetime.datetime.strptime(x[key], data_format) < date_f
+                    )
+                ]
+            else:
+                temp = [
+                    x
+                    for x in self.data
+                    if (
+                        datetime.datetime.strptime(x[key], data_format) >= date_i
+                        and datetime.datetime.strptime(x[key], data_format) < date_f
+                    )
+                ]
         else:
-            temp = [
-                x
-                for x in self.data
-                if (
-                    datetime.datetime.strptime(x[key], data_format) >= date_i
-                    and datetime.datetime.strptime(x[key], data_format) < date_f
-                )
-            ]
+            import dateutil.parser as dp
+
+            if not complement:
+                temp = [
+                    x
+                    for x in self.data
+                    if (dp.parse(x[key]) >= date_i and dp.parse(x[key]) < date_f)
+                ]
+            else:
+                temp = [
+                    x
+                    for x in self.data
+                    if (dp.parse(x[key]) >= date_i and dp.parse(x[key]) < date_f)
+                ]
 
         items_removed = len(self.data) - len(temp)
         self.data = temp
         return items_removed
 
-    def add_datetime_attribute(self, key, data_format, key_to_add, overwrite=False):
+    def add_datetime_attribute(self, key, key_to_add, data_format=None, overwrite=False):
         """
         Adds a key to the data list called `key_to_add`. This key will hold a `datetime`
         object which is built from the string at `key` written in the format `data_format`.
+        If `data_format` is `None`, the datetime will be inferred using the `dateutil` library.
         See documentation for `datetime` to learn how to specify this format.
         Useful for chronological comparisons in Python
         """
@@ -476,17 +485,24 @@ class TextParser:
             raise KeyError("Time key isn't in this dataset")
 
         if key_to_add in self.data[0].keys() and not overwrite:
-            raise KeyError(
-                "Trying to add a pre-existing key. Set 'overwrite' to True to ignore"
-            )
+            raise KeyError("Trying to add a pre-existing key. Set 'overwrite' to True to ignore")
 
         if self.earliest_data is None:
             self.earliest_data = datetime.datetime.now()
 
-        for item in self.data:
-            item[key_to_add] = datetime.datetime.strptime(item[key], data_format)
-            if item[key_to_add] < self.earliest_data:
-                self.earliest_data = item[key_to_add]
+        if data_format is None:
+            import dateutil.parser as dp
+
+            for item in self.data:
+                item[key_to_add] = dp.parse(item[key])
+                if item[key_to_add] < self.earliest_data:
+                    self.earliest_data = item[key_to_add]
+
+        else:
+            for item in self.data:
+                item[key_to_add] = datetime.datetime.strptime(item[key], data_format)
+                if item[key_to_add] < self.earliest_data:
+                    self.earliest_data = item[key_to_add]
 
         self.has_datetime = key_to_add
 
@@ -531,9 +547,7 @@ class TextParser:
 
             # Make sure parsers aren't stemmed
             if parser.stemmed or self.stemmed:
-                raise ValueError(
-                    "Merging TextParsers that have already been stemmed is unsafe"
-                )
+                raise ValueError("Merging TextParsers that have already been stemmed is unsafe")
 
             # Make sure parsers have the same headers
             for header in parser.data[0].keys():
@@ -557,8 +571,8 @@ class TextParser:
     def plot_data_quantities(
         self,
         key,
-        data_format,
         days_interval,
+        data_format=None,
         start_date=None,
         end_date=None,
         normalize=False,
@@ -581,11 +595,14 @@ class TextParser:
         import matplotlib.pyplot as plt
 
         if not self.has_datetime:
-            self.add_datetime_attribute(key, data_format, "__added_datetime")
+            self.add_datetime_attribute(key, "__added_datetime", data_format=data_format)
 
         if start_date is None:
             beginning = self.earliest_data
         else:
+            if data_format is None:
+                raise ValueError("Please specify a format for the start and end date")
+
             beginning = datetime.datetime.strptime(start_date, data_format)
 
         if end_date is None:
@@ -616,9 +633,7 @@ class TextParser:
         # left_off_at jumps from timeslice to timeslice,
         # while the secondary start_index iterator loops through posts within current timeslice
         while beginning < end:
-            end_of_timeslice = min(
-                beginning + datetime.timedelta(days=days_interval), end
-            )
+            end_of_timeslice = min(beginning + datetime.timedelta(days=days_interval), end)
             x_axis_labels.append(beginning.strftime("%Y-%m-%d"))
             start_index = left_off_at
             quant_in_timeslice = 0
@@ -644,6 +659,7 @@ class TextParser:
 
         plt.title(p_title)
         plt.xlabel("Start day of time frame")
+        plt.xticks(rotation=45)
 
         if show_plot:
             plt.show()
@@ -656,26 +672,7 @@ class TextParser:
         """
         return [x[key] for x in self.data]
 
-    def write_data(
-        self, filepath, delimiter=",", write_headers=True, encoding="iso8859"
-    ):
-        """
-        Deprecated function
-        """
-        print(
-            "WARNING: write_data will be removed in a future version. Use write_csv instead"
-        )
-
-        self.write_csv(
-            filepath,
-            delimiter=delimiter,
-            write_headers=write_headers,
-            encoding=encoding,
-        )
-
-    def write_csv(
-        self, filepath, delimiter=",", write_headers=True, encoding="iso8859"
-    ):
+    def write_csv(self, filepath, delimiter=",", write_headers=True, encoding="iso8859"):
         """
         Write data out to a csv-like file at `filepath`.
         The delimiter (comma by default) can be anything
@@ -684,9 +681,7 @@ class TextParser:
         headers = self.data[0].keys()
 
         with open(filepath, "w", newline="", encoding=encoding) as outfile:
-            filewriter = csv.DictWriter(
-                outfile, delimiter=delimiter, fieldnames=headers
-            )
+            filewriter = csv.DictWriter(outfile, delimiter=delimiter, fieldnames=headers)
 
             if write_headers:
                 filewriter.writeheader()

@@ -50,9 +50,7 @@ class TextTrainer(TextParser):
             self.model = LdaSeqModel.load(input_path)
 
         else:
-            raise ValueError(
-                "Specified model type: " + model_type + " is not yet implemented."
-            )
+            raise ValueError("Specified model type: " + model_type + " is not yet implemented.")
 
     def train_lda(
         self,
@@ -61,11 +59,11 @@ class TextTrainer(TextParser):
         multicore=True,
         n_workers=4,
         passes=10,
-        output_path="./lda.model",
+        output_path=None,
     ):
         """
         Train a gensim LDA model with the specified parameters.
-        Will save this model to disk at the specified `output_path`.
+        Will save this model to disk at the specified `output_path`, unless `None`.
         Will generate a gensim dictionary and BoW structure on the data
         with header `key`, unless this has already been done
         """
@@ -96,7 +94,9 @@ class TextTrainer(TextParser):
                 workers=n_workers,
             )
 
-        lda_model.save(output_path)
+        if output_path:
+            lda_model.save(output_path)
+
         self.model = lda_model
         self.model_type = "lda"
 
@@ -143,7 +143,7 @@ class TextTrainer(TextParser):
         passes=10,
         seq_counts=None,
         chain_variance=0.005,
-        output_path="./ldaseq.model",
+        output_path=None,
     ):
         """
         Train a gensim Sequential LDA model. Multicore is currently not supported in gensim,
@@ -175,6 +175,8 @@ class TextTrainer(TextParser):
             passes=passes,
         )
 
-        lda_model.save(output_path)
+        if output_path:
+            lda_model.save(output_path)
+
         self.model = lda_model
         self.model_type = "ldaseq"
