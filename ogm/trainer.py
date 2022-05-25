@@ -149,7 +149,8 @@ class TextTrainer(TextParser):
         Train a gensim Sequential LDA model. Multicore is currently not supported in gensim,
         so this model will take quite a bit longer to train. `seq_counts` is a list of integers
         indicating the number of documents in each time slice. Parser will optionally sort its
-        data by the key specified in `sort_key`
+        data by the key specified in `sort_key`. `passes` controls how many times the data is scanned
+        during the initial LDA model trained. `chain_variance` controls how much the topics evolve.
         """
 
         if seq_counts is None:
@@ -160,6 +161,7 @@ class TextTrainer(TextParser):
 
         if self.dictionary is None:
             self.make_dict_and_corpus(key)
+            self.dictionary.save(output_path + ".dictionary")
 
         if sort_key is not None:
             self.data.sort(key=lambda x: x[sort_key])
