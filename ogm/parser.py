@@ -362,7 +362,7 @@ class TextParser:
         self.data = data_dicts
         self.stemmed = True
 
-    def make_dict_and_corpus(self, key):
+    def make_dict_and_corpus(self, key, filter_vocab_above_thresh=None):
         """
         Will populate the `dictionary` and `corpus` attributes without training a model
         """
@@ -370,6 +370,8 @@ class TextParser:
 
         temp = [entry[key] for entry in self.data]
         self.dictionary = Dictionary(temp)
+        if filter_vocab_above_thresh:
+            self.dictionary.filter_extremes(no_above=filter_vocab_above_thresh)
         self.corpus = [self.dictionary.doc2bow(doc) for doc in temp]
 
     def get_texts(self, key):
