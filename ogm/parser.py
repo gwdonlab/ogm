@@ -6,6 +6,7 @@ Parser class
 import pickle
 import csv
 import datetime
+import pandas as pd
 
 
 class TextParser:
@@ -713,54 +714,3 @@ class TextParser:
             self.data = [x for x in self.data if len(x[key]) >= min_length]
         else:
             self.data = [x for x in self.data if len(x[key]) < min_length]
-
-
-class ImageParser:
-    """
-    *WIP:* Read image data from a variety of sources and perform various processing tasks on it
-    """
-
-    def __init__(self):
-        self.data = []
-
-    def parse_csv(self, filepath, labeled=True):
-        """
-        Parse the csv file at `filepath` into an internal dict list.
-        Assumes each row is a label followed by pixel values.
-        """
-        data_dicts = []
-
-        with open(filepath, "r") as csvin:
-            csvin = csv.reader(csvin)
-
-            for row in csvin:
-                try:
-                    numeric_data = [float(x) for x in row]
-                except ValueError:
-                    continue
-                data_point = {}
-                if labeled:
-                    data_point["label"] = int(numeric_data[0])
-                    data_point["pixels"] = numeric_data[1:]
-                else:
-                    data_point["pixels"] = numeric_data
-                data_dicts.append(data_point)
-
-        self.data = data_dicts
-
-    def export_self(self, outpath="./output.pkl"):
-        """
-        Dumps all instance variables into a pickle file
-        """
-        with open(outpath, "wb") as pickle_out:
-            pickle.dump(self.__dict__, pickle_out)
-
-    def import_self(self, inpath="./output.pkl"):
-        """
-        Loads instance attributes from a pickle file.
-        Will prioritize attributes found in the pickle file over preset ones
-        """
-        with open(inpath, "rb") as pickle_in:
-            temp = pickle.load(pickle_in)
-
-        self.__dict__.update(temp)
