@@ -164,7 +164,7 @@ class TextTrainer(TextParser):
             self.dictionary.save(output_path + ".dictionary")
 
         if sort_key is not None:
-            self.data.sort(key=lambda x: x[sort_key])
+            self.data.sort_values(by=sort_key, inplace=True)
 
         from gensim.models.ldaseqmodel import LdaSeqModel
 
