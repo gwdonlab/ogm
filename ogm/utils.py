@@ -50,44 +50,32 @@ def text_data_preprocess(setup_dict, output=True):
     # Other attribute filters
     if "attribute_filters" in setup_dict:
         for attr_filter in setup_dict["attribute_filters"]:
-            parser.filter_data(
-                attr_filter["filter_key"], set(attr_filter["filter_vals"])
-            )
+            parser.filter_data(attr_filter["filter_key"], set(attr_filter["filter_vals"]))
 
     if "remove_emoji" in setup_dict:
         for item in parser.data:
             item[setup_dict["text_key"]] = remove_emoji(item[setup_dict["text_key"]])
 
     if "replace_before_stemming" in setup_dict:
-        parser.replace_words(
-            setup_dict["text_key"], setup_dict["replace_before_stemming"]
-        )
+        parser.replace_words(setup_dict["text_key"], setup_dict["replace_before_stemming"])
 
     if "remove_before_stemming" in setup_dict:
-        parser.remove_words(
-            setup_dict["text_key"], set(setup_dict["remove_before_stemming"])
-        )
+        parser.remove_words(setup_dict["text_key"], set(setup_dict["remove_before_stemming"]))
 
     parser.lemmatize_stem_words(setup_dict["text_key"])
 
     if "replace_after_stemming" in setup_dict:
-        parser.replace_words(
-            setup_dict["text_key"], setup_dict["replace_after_stemming"]
-        )
+        parser.replace_words(setup_dict["text_key"], setup_dict["replace_after_stemming"])
 
     if "remove_after_stemming" in setup_dict:
-        parser.remove_words(
-            setup_dict["text_key"], set(setup_dict["remove_after_stemming"])
-        )
+        parser.remove_words(setup_dict["text_key"], set(setup_dict["remove_after_stemming"]))
 
     if "min_length" in setup_dict:
         parser.filter_doc_length(setup_dict["text_key"], setup_dict["min_length"])
 
     # Required output path attribute if this arg is true
     if output:
-        parser.write_csv(
-            setup_dict["output_path"], delimiter="\t", encoding=file_encoding
-        )
+        parser.data.to_csv(setup_dict["output_path"], sep="\t", encoding=file_encoding)
 
         return None
 
@@ -152,14 +140,12 @@ def remove_URL(input_text):
 
 
 def sechidis_stratify(data, classes, ratios, one_hot=False):
-    from copy import deepcopy
     import numpy as np
 
-    """Stratifying procedure.
-
-    data is a list of lists: a list of labels, for each sample. 
+    """
+    `data` is a list of lists: a list of labels, for each sample.
     Each sample's labels should be ints, if they are one-hot encoded, use one_hot=True
-    
+
     classes is the list of classes each label can take
 
     ratios is a list, summing to 1, of how the dataset should be split
@@ -189,10 +175,7 @@ def sechidis_stratify(data, classes, ratios, one_hot=False):
 
     # In order not to compute lengths each time, they are tracked here.
     subset_sizes = [r * size for r in ratios]
-    target_subset_sizes = deepcopy(subset_sizes)
-    per_label_subset_sizes = {
-        c: [r * len(per_label_data[c]) for r in ratios] for c in classes
-    }
+    per_label_subset_sizes = {c: [r * len(per_label_data[c]) for r in ratios] for c in classes}
 
     # For each subset we want, the set of sample-ids which should end up in it
     stratified_data_ids = [set() for _ in range(len(ratios))]
@@ -210,7 +193,6 @@ def sechidis_stratify(data, classes, ratios, one_hot=False):
             # In this case, `size` would be > 0 but only samples without label would remain.
             # "No label" could be a class in itself: it's up to you to format your data accordingly.
             break
-        current_length = lengths[label]
 
         # For each sample with label `label`
         while per_label_data[label]:
@@ -228,9 +210,7 @@ def sechidis_stratify(data, classes, ratios, one_hot=False):
             # If there is more than one such subset, find the one in greatest need
             # of any label
             else:
-                largest_subsets = np.argwhere(
-                    subset_sizes == np.amax(subset_sizes)
-                ).flatten()
+                largest_subsets = np.argwhere(subset_sizes == np.amax(subset_sizes)).flatten()
                 if len(largest_subsets) == 1:
                     subset = largest_subsets[0]
                 else:
@@ -259,16 +239,19 @@ def sechidis_stratify(data, classes, ratios, one_hot=False):
     stratified_data_ids = [sorted(strat) for strat in stratified_data_ids]
     stratified_data = [[data[i] for i in strat] for strat in stratified_data_ids]
 
-    # Return both the stratified indexes, to be used to sample the `features` associated with your labels
-    # And the stratified labels dataset
+    # Return both the stratified indexes, to be used to sample
+    # `features` associated with your labels
+    # Also the stratified labels dataset
     return stratified_data_ids, stratified_data
 
 
 def lemmatize_string(words, not_tokenized=True, do_not_tokenize=False, pos="v"):
     """
-    `words` should be a string or a list of strings; set `not_tokenized` to False if this is a list of strings.
+    `words`: a string or a list of strings
+    -- set `not_tokenized` to False if this is a list of strings.
     If `not_tokenized` is True, the string `words` will be split into tokens by spaces.
-    Set `do_not_tokenize` if `words` is not tokenized but shouldn't be split (useful if `words` is a single word).
+    Set `do_not_tokenize` if `words` is not tokenized but shouldn't be split
+    (useful if `words` is a single word).
 
     `pos` is a part-of-speech code accepted by nltk.
 
@@ -285,8 +268,8 @@ def lemmatize_string(words, not_tokenized=True, do_not_tokenize=False, pos="v"):
 
     if do_not_tokenize:
         return [lemmatizer.lemmatize(words, pos=pos)]
-    else:
-        return [lemmatizer.lemmatize(token, pos=pos) for token in to_lemm]
+
+    return [lemmatizer.lemmatize(token, pos=pos) for token in to_lemm]
 
 
 def stem_string(words, not_tokenized=True, do_not_tokenize=False, language="english"):
@@ -310,8 +293,8 @@ def stem_string(words, not_tokenized=True, do_not_tokenize=False, language="engl
 
     if do_not_tokenize:
         return [stemmer.stem(words)]
-    else:
-        return [stemmer.stem(token) for token in to_stem]
+
+    return [stemmer.stem(token) for token in to_stem]
 
 
 def fix_contractions(words):
@@ -321,9 +304,83 @@ def fix_contractions(words):
     Returns a list of un-contracted words.
     """
     import contractions
-    
+
     try:
         return contractions.fix(words)
     except IndexError:
         # On rare occasions, the contractions library crashes with special characters
         return words
+
+
+def plot_data_quantities(
+    df,
+    col,
+    days_interval,
+    start_date=None,
+    end_date=None,
+    normalize=False,
+    show_plot=True,
+    color=None,
+    plot_title="Quantity of data in time frames",
+    hide_xticks=False,
+):
+    """
+    Makes a matplot graph of of the numbers of posts over time. Requires a `col` where
+    the timestamps are stored, a `data_format` to allow `datetime` to parse the timestamp,
+    and a `days_interval` to tell how large each time interval is.
+    Plots data between `start_date` and `end_date`, defaulting to the earliest and latest
+    date in the data. Pass `hide_xticks` to suppress the ticks/labels.
+    You can choose to automatically display the
+    generated plot or not with the `show_plot` flag. Returns the x and y axes.
+    The `color` argument must be `None` or a valid matplotlib color code
+    """
+
+    import matplotlib.pyplot as plt
+    from pandas import to_datetime, Timestamp, DataFrame
+
+    dt_series = to_datetime(df[col])
+
+    if start_date is None:
+        beginning = dt_series.min()
+    else:
+        beginning = Timestamp(start_date)
+
+    if end_date is None:
+        end = dt_series.max()
+    else:
+        end = Timestamp(end_date)
+
+    # Construct timestamp-oriented DataFrame
+    ts_df = DataFrame({"ts": dt_series.tolist(), "date": df[col].tolist()})
+    ts_df = ts_df[(ts_df["ts"] >= beginning) & (ts_df["ts"] <= end)]
+    ts_df = (
+        ts_df.set_index("ts")
+        .resample(str(days_interval) + "D")
+        .agg({"date": "count"})
+        .reset_index()
+    )
+
+    # Construct axes
+    x_axis_labels = [x.strftime("%Y-%m-%d") for x in ts_df["ts"]]
+    y_axis_quantities = [y / ts_df["date"].sum() if normalize else y for y in ts_df["date"]]
+
+    # Construct plot
+    plt.bar(x_axis_labels, y_axis_quantities, color=color)
+    p_title = plot_title
+    if normalize:
+        p_title += " (data normalized)"
+        plt.ylabel("Fraction of total documents")
+    else:
+        plt.ylabel("Number of documents")
+
+    plt.title(p_title)
+    plt.xlabel("Start day of time frame")
+    if hide_xticks:
+        plt.xticks(visible=False)
+    else:
+        plt.xticks(rotation=45)
+
+    if show_plot:
+        plt.show()
+
+    return x_axis_labels, y_axis_quantities

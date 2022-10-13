@@ -54,7 +54,7 @@ class TextTrainer(TextParser):
 
     def train_lda(
         self,
-        key=None,
+        col=None,
         n_topics=100,
         multicore=True,
         n_workers=4,
@@ -65,13 +65,13 @@ class TextTrainer(TextParser):
         Train a gensim LDA model with the specified parameters.
         Will save this model to disk at the specified `output_path`, unless `None`.
         Will generate a gensim dictionary and BoW structure on the data
-        with header `key`, unless this has already been done
+        with header `col`, unless this has already been done
         """
-        if key is None and self.dictionary is None:
-            raise ValueError("Please specify a key to generate dictionary from")
+        if col is None and self.dictionary is None:
+            raise ValueError("Please specify a col to generate a corpus from")
 
         if self.dictionary is None:
-            self.make_dict_and_corpus(key)
+            self.make_dict_and_corpus(col)
 
         if not multicore:
             from gensim.models import LdaModel
@@ -137,8 +137,8 @@ class TextTrainer(TextParser):
 
     def train_ldaseq(
         self,
-        key=None,
-        sort_key=None,
+        col=None,
+        sort_col=None,
         n_topics=100,
         passes=10,
         seq_counts=None,
@@ -149,22 +149,22 @@ class TextTrainer(TextParser):
         Train a gensim Sequential LDA model. Multicore is currently not supported in gensim,
         so this model will take quite a bit longer to train. `seq_counts` is a list of integers
         indicating the number of documents in each time slice. Parser will optionally sort its
-        data by the key specified in `sort_key`. `passes` controls how many times the data is scanned
+        data by the column specified in `sort_col`. `passes` controls how many times the data is scanned
         during the initial LDA model trained. `chain_variance` controls how much the topics evolve.
         """
 
         if seq_counts is None:
             raise ValueError("Please specify a list of integers for seq_counts")
 
-        if key is None and self.dictionary is None:
-            raise ValueError("Please specify a key to generate dictionary from")
+        if col is None and self.dictionary is None:
+            raise ValueError("Please specify a column to generate corpus from")
 
         if self.dictionary is None:
-            self.make_dict_and_corpus(key)
+            self.make_dict_and_corpus(col)
             self.dictionary.save(output_path + ".dictionary")
 
-        if sort_key is not None:
-            self.data.sort(key=lambda x: x[sort_key])
+        if sort_col is not None:
+            self.data.sort_values(by=sort_col, inplace=True)
 
         from gensim.models.ldaseqmodel import LdaSeqModel
 
