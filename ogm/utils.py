@@ -327,3 +327,71 @@ def fix_contractions(words):
     except IndexError:
         # On rare occasions, the contractions library crashes with special characters
         return words
+
+def plot_data_quantities(
+    df,
+    col,
+    days_interval,
+    start_date=None,
+    end_date=None,
+    normalize=False,
+    show_plot=True,
+    color=None,
+    plot_title="Quantity of data in time frames",
+    hide_xticks=False
+):
+    """
+    Makes a matplot graph of of the numbers of posts over time. Requires a `col` where
+    the timestamps are stored, a `data_format` to allow `datetime` to parse the timestamp,
+    and a `days_interval` to tell how large each time interval is.
+    Plots data between `start_date` and `end_date`, defaulting to the earliest and latest
+    date in the data. Pass `hide_xticks` to suppress the ticks/labels.
+    You can choose to automatically display the
+    generated plot or not with the `show_plot` flag. Returns the x and y axes.
+    The `color` argument must be `None` or a valid matplotlib color code
+    """
+
+    import matplotlib.pyplot as plt
+    from pandas import to_datetime, Timestamp, DataFrame
+
+    dt_series = to_datetime(df[col])
+
+    if start_date is None:
+        beginning = dt_series.min()
+    else:
+        beginning = Timestamp(start_date)
+
+    if end_date is None:
+        end = dt_series.max()
+    else:
+        end = Timestamp(end_date)
+
+    # Construct timestamp-oriented DataFrame
+    ts_df = DataFrame({"ts":dt_series.tolist(), "date":df[col].tolist()})
+    ts_df = ts_df[(ts_df["ts"] >= beginning) & (ts_df["ts"] <= end)]
+    ts_df = ts_df.set_index("ts").resample(str(days_interval)+"D").agg({"date": "count"}).reset_index()
+    
+    # Construct axes
+    x_axis_labels = [x.strftime("%Y-%m-%d") for x in ts_df["ts"]]
+    y_axis_quantities = [y/ts_df["date"].sum() if normalize else y for y in ts_df["date"]]
+    
+    # Construct plot
+    plt.bar(x_axis_labels, y_axis_quantities, color=color)
+    p_title = plot_title
+    if normalize:
+        p_title += " (data normalized)"
+        plt.ylabel("Fraction of total documents")
+    else:
+        plt.ylabel("Number of documents")
+
+    plt.title(p_title)
+    plt.xlabel("Start day of time frame")
+    if hide_xticks:
+        plt.xticks(visible=False)
+    else:
+        plt.xticks(rotation=45)
+
+    if show_plot:
+        plt.show()
+
+    return x_axis_labels, y_axis_quantities
