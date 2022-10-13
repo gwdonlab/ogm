@@ -3,8 +3,6 @@ Parser class
 """
 # pylint: disable=too-many-arguments, too-many-locals
 # pylint: disable=too-many-branches, too-many-statements, too-many-nested-blocks
-import pickle
-import csv
 import datetime
 import pandas as pd
 
@@ -27,279 +25,99 @@ class TextParser:
         self.earliest_data = None
         self.has_datetime = None
         self._index = -1
-        self._hashing = None
-        self._hashkey = None
-        self._keytype = None
 
     def __iter__(self):
         return self
 
     def __next__(self):
         self._index += 1
-        if self._index >= len(self.data):
+        if self._index >= self.data.shape[0]:
             self._index = -1
             raise StopIteration
 
         return self.data[self._index]
-
-    def __reversed__(self):
-        return self.data[::-1]
 
     def __getitem__(self, ind):
         """
         If subscripting with an int, it will be treated as a list index in `self.data`.
         """
         if isinstance(ind, int):
-            return self.data[ind]
-        elif type(ind) is self._keytype and not self._hashing is None:
-            return self.data[self._hashing[ind]]
-        else:
-            raise KeyError("Unknown TextParser subscript received: " + str(ind))
+            return self.data.iloc[ind]
 
-    def set_data_id(self, id_key):
-        """
-        It is unsafe to make the `id_key` an int, since it will be indistinguishable from a list index.
-        Setter will automatically make `id_key` a float if it's an int.
-        """
-        if isinstance(self.data[0][id_key], int):
-            self._hashing = {float(x[id_key]): i for i, x in enumerate(self.data)}
-            self._keytype = float
-        else:
-            self._hashing = {x[id_key]: i for i, x in enumerate(self.data)}
-            self._keytype = type(self.data[0][id_key])
-        self._hashkey = id_key
+        raise KeyError("Unknown TextParser subscript received:", ind)
 
-    def parse_file(self, filepath, sheet=0, encoding="utf8", pdf_append=True, id_key=None):
+    def parse_file(self, filepath, sheet=0, encoding="utf8", id_col=None):
         """
         Parse supported file types.
         If parsing an Excel file, optionally specify a `sheet` to be read from the workbook.
         If parsing a delimited file (.tsv, .csv), optionally specify an `encoding`.
-        If `pdf_append` is False, `self.data` will be overwritten by incoming PDF.
+        Optionally, specify a column to be set as DataFrame index.
+        Calling this function twice will overwrite previous data.
         """
 
         if filepath.endswith(".tsv"):
-            data_dicts = []
-            data_temp = []
-
-            with open(filepath, "r", encoding=encoding) as csvin:
-                csvin = csv.reader(csvin, delimiter="\t")
-
-                for row in csvin:
-                    data_temp.append(row)
-
-            for row in data_temp[1:]:
-
-                # Skip row if it's empty
-                if len(row) == 0:
-                    continue
-
-                data_row = {}
-                for heading in data_temp[0]:
-                    data_row[heading] = row[data_temp[0].index(heading)]
-
-                data_dicts.append(data_row)
-
-            self.data = data_dicts
+            self.data = pd.read_csv(filepath, sep="\t", encoding=encoding)
 
         elif filepath.endswith(".csv"):
-            data_dicts = []
-            data_temp = []
-
-            with open(filepath, "r", encoding=encoding) as csvin:
-                csvin = csv.reader(csvin, delimiter=",")
-
-                for row in csvin:
-                    data_temp.append(row)
-
-            for row in data_temp[1:]:
-
-                # Skip row if it's empty
-                if len(row) == 0:
-                    continue
-
-                data_row = {}
-                for heading in data_temp[0]:
-                    data_row[heading] = row[data_temp[0].index(heading)]
-
-                data_dicts.append(data_row)
-
-            self.data = data_dicts
+            self.data = pd.read_csv(filepath, encoding=encoding)
 
         elif filepath.endswith(".xlsx"):
-            import openpyxl
-
-            data_dicts = []
-            header_list = []
-
-            open_wb = openpyxl.load_workbook(filepath, data_only=True, read_only=True)
-            sheet_name = open_wb.sheetnames[sheet]
-            open_sheet = open_wb[sheet_name]
-
-            for row_id, row in enumerate(open_sheet.rows):
-                new_entry = {}
-                for col_id, cell in enumerate(row):
-                    value = cell.value
-
-                    try:
-                        if row_id == 0:
-                            if value is None:
-                                break
-                            header_list.append(value)
-                        else:
-                            if value is None:
-                                new_entry[header_list[col_id]] = ""
-                            else:
-                                new_entry[header_list[col_id]] = value
-                    except IndexError:
-                        break
-
-                if row_id > 0:
-                    data_dicts.append(new_entry)
-
-            self.data = data_dicts
+            self.data = pd.read_excel(filepath, sheet_name=sheet)
 
         elif filepath.endswith(".pkl"):
-            self.import_self(filepath)
+            self.data = pd.read_pickle(filepath)
 
-        elif filepath.endswith(".pdf"):
-            from tika import parser
-
-            raw = parser.from_file(filepath)
-            if pdf_append:
-                self.data.append({"text": raw["content"]})
-            else:
-                self.data = [{"text": raw["content"]}]
+        elif filepath.endswith(".ft"):
+            self.data = pd.read_feather(filepath)
 
         else:
             raise IOError("Unsupported file type")
 
-        if id_key is not None:
-            if isinstance(self.data[0][id_key], int):
-                self._hashing = {float(x[id_key]): i for i, x in enumerate(self.data)}
-                self._keytype = float
-            else:
-                self._hashing = {x[id_key]: i for i, x in enumerate(self.data)}
-                self._keytype = type(self.data[0][id_key])
-            self._hashkey = id_key
+        if id_col is not None:
+            self.data.set_index(id_col, verify_integrity=True, inplace=True)
 
-    def export_self(self, outpath="./output.pkl"):
+    def remove_words(self, col, remove_words):
         """
-        Dumps all instance variables into a pickle file
-        """
-        with open(outpath, "wb") as pickle_out:
-            pickle.dump(self.__dict__, pickle_out)
-
-    def import_self(self, inpath="./output.pkl"):
-        """
-        Loads instance attributes from a pickle file; will prioritize
-        attributes found in the pickle file over preset ones
-        """
-        with open(inpath, "rb") as pickle_in:
-            temp = pickle.load(pickle_in)
-
-        self.__dict__.update(temp)
-
-    def remove_words(self, key, remove_words):
-        """
-        Remove the words in `remove_words` in `data` at the dict key `key`.
+        Remove the words in `remove_words` in `data` at the column `col`.
         `remove_words` should be specified as a `set` object.
         If the data hasn't been stemmed, this does string-matching.
         If the data has been stemmed, this will search through the list of word stems
         """
 
         if not self.data:
-            raise ValueError("Please parse a text file first!")
+            raise ValueError("Parse a text file first!")
 
-        if key not in self.data[0].keys():
-            raise KeyError("Trying to parse text on a key that doesn't exist")
+        if self.stemmed:
+            self.data[col] = self.data[col].apply(
+                lambda cell: [word for word in cell if word not in remove_words]
+            )
+        else:
+            for word in remove_words:
+                self.data[col] = self.data[col].str.replace(word, "")
 
-        occurrences = 0
-        new_dicts = []
-
-        # Loop through data dictionaries
-        for data_dict in self.data:
-            new_dict = {}
-
-            # Loop through each entry in the data dictionary
-            for dict_key in data_dict:
-
-                # If this is true, then this is the data to be cleaned/data is a word list
-                if dict_key == key and self.stemmed:
-                    new_dict[dict_key] = list(
-                        filter(lambda word: word not in remove_words, data_dict[key])
-                    )
-                    occurrences += len(data_dict[dict_key]) - len(new_dict[dict_key])
-
-                # If this is true, then this is the data to be cleaned/data is a string
-                elif dict_key == key:
-                    curr_string = data_dict[key]
-                    for word in remove_words:
-                        curr_string = curr_string.replace(word, "")
-                        occurrences += int(
-                            (len(data_dict[dict_key]) - len(curr_string)) / len(word)
-                        )
-                    new_dict[dict_key] = curr_string
-
-                # Otherwise, this data should just be copied over
-                else:
-                    new_dict[dict_key] = data_dict[dict_key]
-
-            new_dicts.append(new_dict)
-
-        self.data = new_dicts
-        return occurrences
-
-    def replace_words(self, key, replacement_map):
+    def replace_words(self, col, replacement_map):
         """
-        Replace words in `data` at `key` according to mappings in the `replacement_map` dict.
+        Replace words in `data` at `col` according to mappings in the `replacement_map` dict.
         For example, set this dict to `{"cat" : "dog"}` to replace all instances
         of "cat" with "dog".
         """
 
         if not self.data:
-            raise ValueError("Please parse a text file first!")
+            raise ValueError("Parse a text file first!")
 
-        if key not in self.data[0].keys():
-            raise KeyError("Trying to parse text on a key that doesn't exist")
+        if self.stemmed:
+            self.data[col] = self.data[col].apply(
+                lambda cell: [
+                    replacement_map[word] if word in replacement_map else word for word in cell
+                ]
+            )
+        else:
+            for word in replacement_map:
+                self.data[col] = self.data[col].str.replace(replacement_map[word], "")
 
-        new_dicts = []
-
-        # Loop through data dictionaries
-        for data_dict in self.data:
-            new_dict = {}
-
-            # Loop through each entry in the data dictionary
-            for dict_key in data_dict:
-
-                # If this is true, then this is the data to be cleaned/data is a word list
-                if dict_key == key and self.stemmed:
-                    new_word_list = []
-                    for word in data_dict[dict_key]:
-                        if word in replacement_map:
-                            new_word_list.append(replacement_map[word])
-                        else:
-                            new_word_list.append(word)
-
-                    new_dict[dict_key] = new_word_list
-
-                # If this is true, then this is the data to be cleaned/data is a string
-                elif dict_key == key:
-                    curr_string = data_dict[dict_key]
-                    for word in replacement_map:
-                        curr_string = curr_string.replace(word, replacement_map[word])
-                    new_dict[dict_key] = curr_string
-
-                # Otherwise, this data should just be copied over
-                else:
-                    new_dict[dict_key] = data_dict[dict_key]
-
-            new_dicts.append(new_dict)
-
-        self.data = new_dicts
-
-    def lemmatize_stem_words(self, key, pos="v"):
+    def lemmatize_stem_words(self, col, pos="v", min_len=3):
         """
-        Stem and lemmatize words in `data` at the dict key `key` using
+        Stem and lemmatize words in `data` at the column `col` using
         NLTK's SnowballStemmer and WordNetLemmatizer.
         Also converts words to lowercase and expands contractions.
         Stemming means removing suffixes and lemmatizing means converting
@@ -314,101 +132,71 @@ class TextParser:
         from ogm.utils import lemmatize_string, stem_string, fix_contractions
 
         if not self.data:
-            raise ValueError("Please parse a text file first!")
-
-        if key not in self.data[0].keys():
-            raise KeyError("Trying to parse text on a key that doesn't exist")
+            raise ValueError("Parse a text file first!")
 
         if self.stemmed:
             raise ValueError("Data has already been lemmatized and stemmed")
 
-        data_dicts = []
+        def lemm_stem_str(input_str):
+            result = []
 
-        # Iterate through self.data
-        for data_dict in self.data:
-            new_dict = {}
-            for dict_key in data_dict:
+            # Run simple_preprocess and generate a list of tokens from this document
+            for token in simple_preprocess(input_str, min_len=min_len):
 
-                # This key is the one to be operated on
-                if dict_key == key:
-                    result = []
+                # Ignore stopwords and short words, stem/lemmatize the rest
+                if token not in STOPWORDS:
+                    lemm_stem = stem_string(
+                        lemmatize_string(token, do_not_tokenize=True, pos=pos),
+                        not_tokenized=False,
+                        language=self.lang,
+                    )
+                    result.append(lemm_stem[0])
 
-                    # Handle English contractions
-                    if self.lang == "english":
-                        no_contractions = fix_contractions(data_dict[key])
-                    else:
-                        no_contractions = data_dict[key]
+            return result
 
-                    # Run simple_preprocess and generate a list of tokens from this document
-                    for token in simple_preprocess(no_contractions, min_len=3):
+        # Handle English contractions
+        if self.lang == "english":
+            no_contractions = self.data[col].apply(fix_contractions)
+        else:
+            no_contractions = self.data[col]
 
-                        # Ignore stopwords and short words, stem/lemmatize the rest
-                        if token not in STOPWORDS:
-                            lemm_stem = stem_string(
-                                lemmatize_string(token, do_not_tokenize=True, pos=pos),
-                                not_tokenized=False,
-                                language=self.lang,
-                            )
-                            result.append(lemm_stem[0])
+        self.data[col] = no_contractions.apply(lemm_stem_str)
 
-                    # Put this list of words back into the data dict
-                    new_dict[dict_key] = result
-
-                # This key is metadata and should just be copied
-                else:
-                    new_dict[dict_key] = data_dict[dict_key]
-
-            data_dicts.append(new_dict)
-
-        self.data = data_dicts
-        self.stemmed = True
-
-    def make_dict_and_corpus(self, key, filter_vocab_above_thresh=None):
+    def make_dict_and_corpus(self, col, filter_vocab_above_thresh=None):
         """
         Will populate the `dictionary` and `corpus` attributes without training a model
         """
         from gensim.corpora import Dictionary
 
-        temp = [entry[key] for entry in self.data]
+        temp = self.data[col].tolist()
         self.dictionary = Dictionary(temp)
         if filter_vocab_above_thresh:
             self.dictionary.filter_extremes(no_above=filter_vocab_above_thresh)
         self.corpus = [self.dictionary.doc2bow(doc) for doc in temp]
 
-    def get_texts(self, key):
+    def filter_data(self, col, acceptable_vals, complement=False):
         """
-        Alias for `get_attribute_list`. Use this function in the future
-        """
-        print("WARNING: get_texts is deprecated. Use get_attribute_list instead")
-        return self.get_attribute_list(key)
-
-    def filter_data(self, key, acceptable_vals, complement=False):
-        """
-        Filter dataset so that only items in `acceptable_vals` appear in the data's `key` heading.
+        Filter dataset so that only items in `acceptable_vals` appear in the data's `col` column.
         `acceptable_vals` should be specified as a `set` object.
         This operation can be complemented by setting `complement` to True.
         This can be called multiple times, but data will be deleted if it doesn't match the filter.
         Will return the number of entries removed
         """
         if not self.data:
-            raise ValueError("Parse a text file first")
+            raise ValueError("Parse a text file first!")
 
-        if key not in self.data[0].keys():
-            raise KeyError("Trying to filter by a key that isn't in the dataset")
-
-        temp = []
         if not complement:
-            temp = [x for x in self.data if x[key] in acceptable_vals]
+            temp = self.data[self.data[col].isin(acceptable_vals)]
         else:
-            temp = [x for x in self.data if x[key] not in acceptable_vals]
+            temp = self.data[~self.data[col].isin(acceptable_vals)]
 
-        items_removed = len(self.data) - len(temp)
+        items_removed = self.data.shape[0] - temp.shape[0]
         self.data = temp
 
         return items_removed
 
     def filter_within_time_range(
-        self, key, input_format, start, end, data_format=None, complement=False
+        self, col, input_format, start, end, data_format=None, complement=False
     ):
         """
         Filter dataset so that items with a time attribute are restricted by the time frame from
@@ -419,298 +207,71 @@ class TextParser:
         Will return the number of entries removed
         """
         if not self.data:
-            raise ValueError("Parse a text file first")
-
-        if key not in self.data[0].keys():
-            raise KeyError("Time key isn't in this dataset")
+            raise ValueError("Parse a text file first!")
 
         date_f = datetime.datetime.strptime(end, input_format)
         date_i = datetime.datetime.strptime(start, input_format)
         temp = []
 
+        def determine_date(input_dt):
+            return input_dt >= date_i and input_dt < date_f
+
         if data_format is not None:
             if not complement:
-                temp = [
-                    x
-                    for x in self.data
-                    if (
-                        datetime.datetime.strptime(x[key], data_format) >= date_i
-                        and datetime.datetime.strptime(x[key], data_format) < date_f
-                    )
+                temp = self.data[
+                    self.data[col]
+                    .apply(lambda x: datetime.datetime.strptime(x, data_format))
+                    .apply(determine_date)
                 ]
             else:
-                temp = [
-                    x
-                    for x in self.data
-                    if (
-                        datetime.datetime.strptime(x[key], data_format) >= date_i
-                        and datetime.datetime.strptime(x[key], data_format) < date_f
-                    )
+                temp = self.data[
+                    ~self.data[col]
+                    .apply(lambda x: datetime.datetime.strptime(x, data_format))
+                    .apply(determine_date)
                 ]
         else:
             import dateutil.parser as dp
 
             if not complement:
-                temp = [
-                    x
-                    for x in self.data
-                    if (dp.parse(x[key]) >= date_i and dp.parse(x[key]) < date_f)
-                ]
+                temp = self.data[self.data[col].apply(dp.parse).apply(determine_date)]
             else:
-                temp = [
-                    x
-                    for x in self.data
-                    if (dp.parse(x[key]) >= date_i and dp.parse(x[key]) < date_f)
-                ]
+                temp = self.data[~self.data[col].apply(dp.parse).apply(determine_date)]
 
-        items_removed = len(self.data) - len(temp)
+        items_removed = self.data.shape[0] - temp.shape[0]
         self.data = temp
         return items_removed
-
-    def add_datetime_attribute(self, key, key_to_add, data_format=None, overwrite=False):
-        """
-        Adds a key to the data list called `key_to_add`. This key will hold a `datetime`
-        object which is built from the string at `key` written in the format `data_format`.
-        If `data_format` is `None`, the datetime will be inferred using the `dateutil` library.
-        See documentation for `datetime` to learn how to specify this format.
-        Useful for chronological comparisons in Python
-        """
-        if self.has_datetime is not None:
-            print(
-                "WARNING: TextParser already has datetime attribute at",
-                self.has_datetime,
-            )
-
-        if not self.data:
-            raise ValueError("Parse a text file first")
-
-        if key not in self.data[0].keys():
-            raise KeyError("Time key isn't in this dataset")
-
-        if key_to_add in self.data[0].keys() and not overwrite:
-            raise KeyError("Trying to add a pre-existing key. Set 'overwrite' to True to ignore")
-
-        if self.earliest_data is None:
-            self.earliest_data = datetime.datetime.now()
-
-        if data_format is None:
-            import dateutil.parser as dp
-
-            for item in self.data:
-                item[key_to_add] = dp.parse(item[key])
-                if item[key_to_add] < self.earliest_data:
-                    self.earliest_data = item[key_to_add]
-
-        else:
-            for item in self.data:
-                item[key_to_add] = datetime.datetime.strptime(item[key], data_format)
-                if item[key_to_add] < self.earliest_data:
-                    self.earliest_data = item[key_to_add]
-
-        self.has_datetime = key_to_add
-
-    def find_earliest_data(self, key, data_format):
-        """
-        Scans data with timestamp `key` formatted with `data_format`
-        to find the earliest-occurring datd point
-        """
-        self.earliest_data = datetime.datetime.now()
-
-        for item in self.data:
-            timestamp = datetime.datetime.strptime(item[key], data_format)
-
-            if timestamp < self.earliest_data:
-                self.earliest_data = timestamp
 
     def __str__(self):
         stub = "Parser Object\n\tDocuments: %d" % len(self.data)
         if self.data:
-            stub += "\n\tHeaders: " + str(self.data[0].keys())
+            stub += "\n\tColumns: " + str(self.data.columns)
             stub += "\n\tLanguage: " + self.lang
             stub += "\n\tStemmed: " + str(self.stemmed)
         return stub
 
-    def merge_data(self, list_of_textparsers):
+    def get_attribute_list(self, col):
         """
-        For each `TextParser` in `list_of_textparsers`, merge its `data` attribute into this
-        `TextParser`'s `data` attribute. Will check to ensure data doesn't have different headers
-        and hasn't been stemmed. These operations are considered unsafe and will throw exceptions.
+        Return a list of the data contained under the header `col`
         """
+        return self.data[col].tolist()
 
-        for parser in list_of_textparsers:
-
-            # Warn user if a passed TextParser is empty
-            if not parser.data:
-                print("WARNING: Found empty TextParser. Skipping...")
-                continue
-
-            # Make sure you aren't duplicating a parser
-            if parser is self:
-                raise ValueError("Tried to merge self with self")
-
-            # Make sure parsers aren't stemmed
-            if parser.stemmed or self.stemmed:
-                raise ValueError("Merging TextParsers that have already been stemmed is unsafe")
-
-            # Make sure parsers have the same headers
-            for header in parser.data[0].keys():
-                if header not in self.data[0]:
-                    raise KeyError(
-                        "Merging TextParsers with different headers is unsafe: "
-                        + "Found a key in one of the arguments that isn't in this parser"
-                    )
-
-            for header in self.data[0].keys():
-                if header not in parser.data[0]:
-                    raise KeyError(
-                        "Merging TextParsers with different headers is unsafe: "
-                        + "Found a key in this parser that isn't in one of the arguments"
-                    )
-
-            # Append each data point from parser into this TextParser
-            for datum in parser.data:
-                self.data.append(datum)
-
-    def plot_data_quantities(
-        self,
-        key,
-        days_interval,
-        data_format=None,
-        start_date=None,
-        end_date=None,
-        normalize=False,
-        show_plot=True,
-        color=None,
-        plot_title="Quantity of data in time frames",
-    ):
+    def merge_words(self, col, new_col=None):
         """
-        Makes a matplot graph of of the numbers of posts over time. Requires a `key` where
-        the timestamps are stored, a `data_format` to allow `datetime` to parse the timestamp,
-        and a `days_interval` to tell how large each time interval is.
-        Starts at earliest found timestamp, unless `start_date` is specified with `data_format`.
-        Ends at current date, unless `end_date` is specified with `data_format`.
-        Will run `add_datetime_attribute` with key "__added_datetime"
-        if this isn't manually run earlier. You can choose to automatically display the
-        generated plot or not with the `show_plot` flag. Returns the x and y axes.
-        The `color` argument must be `None` or a valid matplotlib color code
+        For all data points, merges a list of words in `col` into a string at `col` instead,
+        unless `new_col` is not `None`
         """
-
-        import matplotlib.pyplot as plt
-
-        if not self.has_datetime:
-            self.add_datetime_attribute(key, "__added_datetime", data_format=data_format)
-
-        if start_date is None:
-            beginning = self.earliest_data
+        if new_col is None:
+            dest = col
         else:
-            if data_format is None:
-                raise ValueError("Please specify a format for the start and end date")
+            dest = new_col
 
-            beginning = datetime.datetime.strptime(start_date, data_format)
+        self.data[dest] = self.data[col].apply(lambda str_list: " ".join(str_list))
 
-        if end_date is None:
-            end = datetime.datetime.now()
+    def filter_doc_length(self, col, min_length, complement=False):
+        """
+        Removes all documents at `col` with length shorter than `min_length`
+        """
+        if complement:
+            self.data = self.data[self.data[col].str.len() < min_length]
         else:
-            end = datetime.datetime.strptime(end_date, data_format)
-
-        # Sort data chronologically
-        self.data.sort(key=lambda x: x[self.has_datetime])
-
-        # Initialize empty logistics structures
-        x_axis_labels = []
-        y_axis_quantities = []
-        left_off_at = 0
-
-        # If the user didn't give a start date, we're guaranteed that we should start at index 0
-        if start_date is not None:
-            try:
-                # Find correct index to start counting posts at
-                while self.data[left_off_at][self.has_datetime] < beginning:
-                    left_off_at += 1
-
-            except IndexError:
-                raise ValueError("Couldn't find any posts in specified time frame")
-
-        # Iterate through the data and tally up how many posts are in each bucket
-        # This runs in O(n) time:
-        # left_off_at jumps from timeslice to timeslice,
-        # while the secondary start_index iterator loops through posts within current timeslice
-        while beginning < end:
-            end_of_timeslice = min(beginning + datetime.timedelta(days=days_interval), end)
-            x_axis_labels.append(beginning.strftime("%Y-%m-%d"))
-            start_index = left_off_at
-            quant_in_timeslice = 0
-            while (
-                start_index < len(self.data)
-                and self.data[start_index][self.has_datetime] < end_of_timeslice
-            ):
-                quant_in_timeslice += 1
-                start_index += 1
-            left_off_at = start_index
-            y_axis_quantities.append(quant_in_timeslice)
-            beginning = end_of_timeslice
-
-        p_title = plot_title
-        if normalize:
-            y_ax = [x / sum(y_axis_quantities) for x in y_axis_quantities]
-            plt.bar(x_axis_labels, y_ax, color=color)
-            p_title += " (data normalized)"
-            plt.ylabel("Fraction of total documents")
-        else:
-            plt.bar(x_axis_labels, y_axis_quantities, color=color)
-            plt.ylabel("Number of documents")
-
-        plt.title(p_title)
-        plt.xlabel("Start day of time frame")
-        plt.xticks(rotation=45)
-
-        if show_plot:
-            plt.show()
-
-        return x_axis_labels, y_axis_quantities
-
-    def get_attribute_list(self, key):
-        """
-        Return a list of the data contained under the header `key`
-        """
-        return [x[key] for x in self.data]
-
-    def write_csv(self, filepath, delimiter=",", write_headers=True, encoding="iso8859"):
-        """
-        Write data out to a csv-like file at `filepath`.
-        The delimiter (comma by default) can be anything
-        """
-
-        headers = self.data[0].keys()
-
-        with open(filepath, "w", newline="", encoding=encoding) as outfile:
-            filewriter = csv.DictWriter(outfile, delimiter=delimiter, fieldnames=headers)
-
-            if write_headers:
-                filewriter.writeheader()
-
-            for item in self.data:
-                filewriter.writerow(item)
-
-    def merge_words(self, key, new_key=None):
-        """
-        For all data points, merges a list of words in `key` into a string at `key` instead,
-        unless `new_key` is not `None`
-        """
-        if new_key is None:
-            dest = key
-        else:
-            dest = new_key
-
-        for item in self.data:
-            new_string = " ".join(item[key])
-            item[dest] = new_string
-
-    def filter_doc_length(self, key, min_length, complement=False):
-        """
-        Removes all documents at `key` with length shorter than `min_length`
-        """
-        if not complement:
-            self.data = [x for x in self.data if len(x[key]) >= min_length]
-        else:
-            self.data = [x for x in self.data if len(x[key]) < min_length]
+            self.data = self.data[self.data[col].str.len() >= min_length]
