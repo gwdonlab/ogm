@@ -242,9 +242,9 @@ class TextParser:
         return items_removed
 
     def __str__(self):
-        stub = "Parser Object\n\tDocuments: %d" % len(self.data)
-        if self.data:
-            stub += "\n\tColumns: " + str(self.data.columns)
+        stub = "Parser Object\n\tDocuments: %d" % self.data.shape[0]
+        if self.data is not None:
+            stub += "\n\tColumns: " + str(list(self.data.columns))
             stub += "\n\tLanguage: " + self.lang
             stub += "\n\tStemmed: " + str(self.stemmed)
         return stub
