@@ -5,3 +5,4 @@ openpyxl >= 3.0.7
 matplotlib >= 3.4.3
 tqdm >= 4.62.3
 contractions >= 0.0.52
+matplotlib-label-lines ~= 0.5.1

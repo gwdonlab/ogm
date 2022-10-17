@@ -19,11 +19,9 @@ class TextParser:
         """
         self.lang = language
         self.stemmed = False
-        self.data = []
+        self.data = None
         self.dictionary = None
         self.corpus = None
-        self.earliest_data = None
-        self.has_datetime = None
         self._index = -1
 
     def __iter__(self):
@@ -84,7 +82,7 @@ class TextParser:
         If the data has been stemmed, this will search through the list of word stems
         """
 
-        if not self.data:
+        if self.data is None:
             raise ValueError("Parse a text file first!")
 
         if self.stemmed:
@@ -93,7 +91,7 @@ class TextParser:
             )
         else:
             for word in remove_words:
-                self.data[col] = self.data[col].str.replace(word, "")
+                self.data[col] = self.data[col].str.replace(word, "", regex=False)
 
     def replace_words(self, col, replacement_map):
         """
@@ -102,7 +100,7 @@ class TextParser:
         of "cat" with "dog".
         """
 
-        if not self.data:
+        if self.data is None:
             raise ValueError("Parse a text file first!")
 
         if self.stemmed:
@@ -113,7 +111,9 @@ class TextParser:
             )
         else:
             for word in replacement_map:
-                self.data[col] = self.data[col].str.replace(replacement_map[word], "")
+                self.data[col] = self.data[col].str.replace(
+                    word, replacement_map[word], regex=False
+                )
 
     def lemmatize_stem_words(self, col, pos="v", min_len=3):
         """
@@ -131,7 +131,7 @@ class TextParser:
         from gensim.utils import simple_preprocess
         from ogm.utils import lemmatize_string, stem_string, fix_contractions
 
-        if not self.data:
+        if self.data is None:
             raise ValueError("Parse a text file first!")
 
         if self.stemmed:
@@ -161,6 +161,7 @@ class TextParser:
             no_contractions = self.data[col]
 
         self.data[col] = no_contractions.apply(lemm_stem_str)
+        self.stemmed = True
 
     def make_dict_and_corpus(self, col, filter_vocab_above_thresh=None):
         """
@@ -182,7 +183,7 @@ class TextParser:
         This can be called multiple times, but data will be deleted if it doesn't match the filter.
         Will return the number of entries removed
         """
-        if not self.data:
+        if self.data is None:
             raise ValueError("Parse a text file first!")
 
         if not complement:
@@ -206,7 +207,7 @@ class TextParser:
         Operation can be complemented by setting `complement` to True.
         Will return the number of entries removed
         """
-        if not self.data:
+        if self.data is None:
             raise ValueError("Parse a text file first!")
 
         date_f = datetime.datetime.strptime(end, input_format)
@@ -242,9 +243,9 @@ class TextParser:
         return items_removed
 
     def __str__(self):
-        stub = "Parser Object\n\tDocuments: %d" % len(self.data)
-        if self.data:
-            stub += "\n\tColumns: " + str(self.data.columns)
+        stub = "Parser Object\n\tDocuments: %d" % self.data.shape[0]
+        if self.data is not None:
+            stub += "\n\tColumns: " + str(list(self.data.columns))
             stub += "\n\tLanguage: " + self.lang
             stub += "\n\tStemmed: " + str(self.stemmed)
         return stub

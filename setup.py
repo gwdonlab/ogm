@@ -8,7 +8,7 @@ if os.path.isfile(req_file):
 
 setuptools.setup(
     name="Online Group Modeling",
-    version="2.0.0",
+    version="2.0.1",
     author="Richard Sear",
     author_email="searri@gwu.edu",
     description="Package for using machine learning to analyze the behavior of online groups",

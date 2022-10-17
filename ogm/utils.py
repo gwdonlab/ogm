@@ -29,22 +29,24 @@ def text_data_preprocess(setup_dict, output=True):
         file_encoding = "utf8"
 
     parser.parse_file(data_file, encoding=file_encoding)
+    parser.data.dropna(subset=[setup_dict["text_key"]], inplace=True)
+    parser.data.reset_index(drop=True, inplace=True)
 
     # Optional time frame attribute
     if "time_filter" in setup_dict and "data_format" in setup_dict["time_filter"]:
         parser.filter_within_time_range(
-            setup_dict["time_filter"]["time_key"],
-            setup_dict["time_filter"]["arg_format"],
-            setup_dict["time_filter"]["start"],
-            setup_dict["time_filter"]["end"],
-            setup_dict["time_filter"]["data_format"],
+            col=setup_dict["time_filter"]["time_key"],
+            data_format=setup_dict["time_filter"]["data_format"],
+            input_format=setup_dict["time_filter"]["arg_format"],
+            start=setup_dict["time_filter"]["start"],
+            end=setup_dict["time_filter"]["end"],
         )
     elif "time_filter" in setup_dict:
         parser.filter_within_time_range(
-            setup_dict["time_filter"]["time_key"],
-            setup_dict["time_filter"]["arg_format"],
-            setup_dict["time_filter"]["start"],
-            setup_dict["time_filter"]["end"],
+            col=setup_dict["time_filter"]["time_key"],
+            input_format=setup_dict["time_filter"]["arg_format"],
+            start=setup_dict["time_filter"]["start"],
+            end=setup_dict["time_filter"]["end"],
         )
 
     # Other attribute filters
