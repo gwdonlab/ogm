@@ -19,7 +19,7 @@ class TextParser:
         """
         self.lang = language
         self.stemmed = False
-        self.data = []
+        self.data = None
         self.dictionary = None
         self.corpus = None
         self.earliest_data = None
@@ -84,7 +84,7 @@ class TextParser:
         If the data has been stemmed, this will search through the list of word stems
         """
 
-        if not self.data:
+        if self.data is None:
             raise ValueError("Parse a text file first!")
 
         if self.stemmed:
@@ -102,7 +102,7 @@ class TextParser:
         of "cat" with "dog".
         """
 
-        if not self.data:
+        if self.data is None:
             raise ValueError("Parse a text file first!")
 
         if self.stemmed:
@@ -131,7 +131,7 @@ class TextParser:
         from gensim.utils import simple_preprocess
         from ogm.utils import lemmatize_string, stem_string, fix_contractions
 
-        if not self.data:
+        if self.data is None:
             raise ValueError("Parse a text file first!")
 
         if self.stemmed:
@@ -182,7 +182,7 @@ class TextParser:
         This can be called multiple times, but data will be deleted if it doesn't match the filter.
         Will return the number of entries removed
         """
-        if not self.data:
+        if self.data is None:
             raise ValueError("Parse a text file first!")
 
         if not complement:
@@ -206,7 +206,7 @@ class TextParser:
         Operation can be complemented by setting `complement` to True.
         Will return the number of entries removed
         """
-        if not self.data:
+        if self.data is None:
             raise ValueError("Parse a text file first!")
 
         date_f = datetime.datetime.strptime(end, input_format)
