@@ -159,6 +159,7 @@ class TextParser:
             no_contractions = self.data[col]
 
         self.data[col] = no_contractions.apply(lemm_stem_str)
+        self.stemmed = True
 
     def make_dict_and_corpus(self, col, filter_vocab_above_thresh=None):
         """

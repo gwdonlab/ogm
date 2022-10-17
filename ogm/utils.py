@@ -29,6 +29,7 @@ def text_data_preprocess(setup_dict, output=True):
         file_encoding = "utf8"
 
     parser.parse_file(data_file, encoding=file_encoding)
+    parser.data.dropna(subset=[setup_dict["text_key"]], inplace=True)
 
     # Optional time frame attribute
     if "time_filter" in setup_dict and "data_format" in setup_dict["time_filter"]:
