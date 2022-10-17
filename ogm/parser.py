@@ -111,7 +111,9 @@ class TextParser:
             )
         else:
             for word in replacement_map:
-                self.data[col] = self.data[col].str.replace(replacement_map[word], "", regex=False)
+                self.data[col] = self.data[col].str.replace(
+                    word, replacement_map[word], regex=False
+                )
 
     def lemmatize_stem_words(self, col, pos="v", min_len=3):
         """
