@@ -22,8 +22,6 @@ class TextParser:
         self.data = None
         self.dictionary = None
         self.corpus = None
-        self.earliest_data = None
-        self.has_datetime = None
         self._index = -1
 
     def __iter__(self):
