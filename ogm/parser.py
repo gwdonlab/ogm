@@ -93,7 +93,7 @@ class TextParser:
             )
         else:
             for word in remove_words:
-                self.data[col] = self.data[col].str.replace(word, "")
+                self.data[col] = self.data[col].str.replace(word, "", regex=False)
 
     def replace_words(self, col, replacement_map):
         """
@@ -113,7 +113,7 @@ class TextParser:
             )
         else:
             for word in replacement_map:
-                self.data[col] = self.data[col].str.replace(replacement_map[word], "")
+                self.data[col] = self.data[col].str.replace(replacement_map[word], "", regex=False)
 
     def lemmatize_stem_words(self, col, pos="v", min_len=3):
         """
