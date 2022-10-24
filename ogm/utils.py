@@ -6,10 +6,11 @@ This is mainly here to reduce code duplication
 # pylint: disable=too-many-branches
 
 
-def text_data_preprocess(setup_dict, output=True):
+def text_data_preprocess(setup_dict, output=False, return_parser=False):
     """
     Run preprocessing on text data; `setup_dict` should be in JSON format described in README.
-    Set `output` to write processed data into a file, otherwise this will return the parser's data.
+    Set `output` to write processed data into a file and return None.
+    Set `return_parser` to return a TextParser rather than a dataframe
     """
     from ogm.parser import TextParser
 
@@ -80,6 +81,9 @@ def text_data_preprocess(setup_dict, output=True):
         parser.data.to_csv(setup_dict["output_path"], sep="\t", encoding=file_encoding)
 
         return None
+
+    if return_parser:
+        return parser
 
     return parser.data
 
